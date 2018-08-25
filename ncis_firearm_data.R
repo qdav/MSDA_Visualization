@@ -1,4 +1,9 @@
+#install.packages("tidyverse")
+#install.packages("zoo")
+
 library(tidyverse)
+library(zoo)
+
 options(stringsAsFactors = FALSE)
 
 permits <- read.csv("nics-firearm-background-checks.csv")
