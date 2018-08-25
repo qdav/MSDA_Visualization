@@ -15,3 +15,4 @@ ggplot(data = texas_perm) +
   geom_line(mapping = aes(x = month, y = totals))
 
 
+
