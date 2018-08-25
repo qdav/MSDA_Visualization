@@ -26,11 +26,13 @@ usmap::plot_usmap(data = permits2017, values = "totals", lines = "red") +
   ) + theme(legend.position = "right")
 
 
-# texas permits over time
-texas_perm <- filter(permits, permits$state == "Texas")
+# Texas long gun vs hand gun permits over time
+texas_perm <- filter(permits, 
+                      permits$state == "Texas")
 
 ggplot(data = texas_perm) + 
-  geom_line(mapping = aes(x = month, y = totals))
+  geom_line(mapping = aes(x = month, y = long_gun, color="Long Gun")) +
+  geom_line(mapping = aes(x = month, y = handgun, color="Handgun"))
 
 
 
