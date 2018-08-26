@@ -10,10 +10,17 @@ library(usmap)
 options(stringsAsFactors = FALSE)
 
 # get list of permits by state
-permits <- read.csv("nics-firearm-background-checks.csv")
+permits_temp <- read.csv("nics-firearm-background-checks.csv")
+permits <-  filter( permits_temp, 
+                    permits_temp$state != "Virgin Islands" &
+                    permits_temp$state != "Mariana Islands" &
+                    permits_temp$state != "Guam")
 permits$year <- substr(permits$month, 1, 4)
+permits$year <- as.integer(permits$year)
 permits$month <- as.yearmon(permits$month)
 permits$state <- as.factor(permits$state)
+
+
 
 # get population by state
 state_pop_temp <- read_csv("nst-est2017-alldata.csv") %>%
@@ -24,9 +31,11 @@ state_pop_temp <- read_csv("nst-est2017-alldata.csv") %>%
          key = "year", value = "population") %>%
   separate("year", c("nothing", "year"), 11) %>%
   select("SUMLEV", "NAME", "year", "population") 
- 
-colnames(state_pop_temp)[colnames(state_pop_temp) == 'NAME'] <- 'state'
+
 state_pop <- filter( state_pop_temp, SUMLEV == 40)
+state_pop$year <- as.integer(state_pop$year)
+colnames(state_pop)[colnames(state_pop) == 'NAME'] <- 'state'
+state_pop$state <- as.factor(state_pop$state)
 
 
 #join permit and population data
@@ -36,7 +45,7 @@ permits_and_pop_temp <- left_join(permits, state_pop, c("state", "year"))
 permits_and_pop <- transform(permits_and_pop_temp, perm_per_capita = totals / population * 1000)
 
 # show map of population by state for 2017
-state_pop_2017 <- filter(state_pop, year == "2017")
+state_pop_2017 <- filter(state_pop, year == 2017)
 
 usmap::plot_usmap(data = state_pop_2017, values = "population", lines = "red") + 
   scale_fill_continuous(
