@@ -67,7 +67,7 @@ usmap::plot_usmap(data = permits_2017_per_cap, values = "perm_per_capita", lines
   scale_fill_continuous(
     low = "white", high = "red", name = "Permits Per 1000 in Population - 2017", label = scales::comma
   ) + theme(legend.position = "right")
-View(permits_2017_per_cap)
+
 
 
 # Texas long gun vs hand gun permits over time
