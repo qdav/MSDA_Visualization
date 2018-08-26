@@ -9,10 +9,34 @@ library(usmap)
 
 options(stringsAsFactors = FALSE)
 
-# retrieve data from comma delimited file/adjust data types
+# get list of permits by state
 permits <- read.csv("nics-firearm-background-checks.csv")
 permits$month <- as.yearmon(permits$month)
 permits$state <- as.factor(permits$state)
+
+# get population by state
+state_pop_temp <- read_csv("nst-est2017-alldata.csv") %>%
+  gather(`POPESTIMATE2010`, `POPESTIMATE2011`, 
+         `POPESTIMATE2012`, `POPESTIMATE2013`, 
+         `POPESTIMATE2014`, `POPESTIMATE2015`,
+         `POPESTIMATE2016`, `POPESTIMATE2017`,
+         key = "year", value = "population") %>%
+  separate("year", c("nothing", "year"), 11) %>%
+  select("SUMLEV", "NAME", "year", "population") 
+ 
+  colnames(state_pop_temp)[colnames(state_pop_temp) == 'NAME'] <- 'state'
+  state_pop <- filter( state_pop_temp, SUMLEV == 40)
+
+  
+  # show map of population by state for 2017
+  state_pop_2017 <- filter(state_pop, year == "2017")
+  
+  usmap::plot_usmap(data = state_pop_2017, values = "population", lines = "red") + 
+    scale_fill_continuous(
+      low = "white", high = "red", name = "Population By State 2017", label = scales::comma
+    ) + theme(legend.position = "right")  
+  
+
 
 # show map of permits by state for 2017
 permits2017 <- filter(permits, 
