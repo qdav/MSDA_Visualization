@@ -11,8 +11,11 @@ options(stringsAsFactors = FALSE)
 
 # get list of permits by state
 permits <- read.csv("nics-firearm-background-checks.csv")
+permits$year <- substr(permits$month, 1, 4)
 permits$month <- as.yearmon(permits$month)
 permits$state <- as.factor(permits$state)
+
+View(permits)
 
 # get population by state
 state_pop_temp <- read_csv("nst-est2017-alldata.csv") %>%
@@ -24,18 +27,22 @@ state_pop_temp <- read_csv("nst-est2017-alldata.csv") %>%
   separate("year", c("nothing", "year"), 11) %>%
   select("SUMLEV", "NAME", "year", "population") 
  
-  colnames(state_pop_temp)[colnames(state_pop_temp) == 'NAME'] <- 'state'
-  state_pop <- filter( state_pop_temp, SUMLEV == 40)
+colnames(state_pop_temp)[colnames(state_pop_temp) == 'NAME'] <- 'state'
+state_pop <- filter( state_pop_temp, SUMLEV == 40)
 
-  
-  # show map of population by state for 2017
-  state_pop_2017 <- filter(state_pop, year == "2017")
-  
-  usmap::plot_usmap(data = state_pop_2017, values = "population", lines = "red") + 
-    scale_fill_continuous(
-      low = "white", high = "red", name = "Population By State 2017", label = scales::comma
-    ) + theme(legend.position = "right")  
-  
+
+#join permit and population data
+permits_and_pop_temp <- left_join(permits, state_pop, c("state", "year"))
+
+permits_and_pop <- transform(permits_and_pop_temp, perm_per_capita = totals / population * 1000)
+
+# show map of population by state for 2017
+state_pop_2017 <- filter(state_pop, year == "2017")
+
+usmap::plot_usmap(data = state_pop_2017, values = "population", lines = "red") + 
+  scale_fill_continuous(
+    low = "white", high = "red", name = "Population By State 2017", label = scales::comma
+  ) + theme(legend.position = "right")  
 
 
 # show map of permits by state for 2017
@@ -47,6 +54,18 @@ usmap::plot_usmap(data = permits2017, values = "totals", lines = "red") +
   scale_fill_continuous(
     low = "white", high = "red", name = "Permits By State 2017", label = scales::comma
   ) + theme(legend.position = "right")
+
+
+# show map of per capita permits by state
+permits_2017_per_cap <- filter(permits_and_pop, 
+                      permits$month >= as.yearmon("2017-01") &
+                        permits$month < as.yearmon("2018-01"))
+
+usmap::plot_usmap(data = permits_2017_per_cap, values = "perm_per_capita", lines = "red") + 
+  scale_fill_continuous(
+    low = "white", high = "red", name = "Permits Per 1000 in Population - 2017", label = scales::comma
+  ) + theme(legend.position = "right")
+View(permits_2017_per_cap)
 
 
 # Texas long gun vs hand gun permits over time
