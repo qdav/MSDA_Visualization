@@ -12,8 +12,7 @@ options(stringsAsFactors = FALSE)
 # retrieve data from comma delimited file/adjust data types
 permits <- read.csv("nics-firearm-background-checks.csv")
 permits$month <- as.yearmon(permits$month)
-
-
+permits$state <- as.factor(permits$state)
 
 # show map of permits by state for 2017
 permits2017 <- filter(permits, 
