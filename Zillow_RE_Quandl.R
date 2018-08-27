@@ -21,10 +21,14 @@ mydata4 <- Quandl('ZILLOW/C11731_IMP')
 colnames(mydata4)[colnames(mydata4) == 'Value'] <- 'inv_measure'
 mydata5 <- Quandl('ZILLOW/C11731_PLPRAH') 
 colnames(mydata5)[colnames(mydata5) == 'Value'] <- 'pct_listings_price_red'
+mydata6 <- Quandl('ZILLOW/C11731_MPCDAH') 
+colnames(mydata6)[colnames(mydata6) == 'Value'] <- 'med_price_cut_amt'
 
-city_re_stats <- list(date_master_df, mydata1, mydata2, mydata3, mydata4, mydata5) %>% reduce(left_join, by = "Date")
+city_re_stats <- list(date_master_df, 
+                      mydata1, mydata2, mydata3, mydata4, 
+                      mydata5, mydata6) %>% reduce(left_join, by = "Date")
 
 str(city_re_stats)
 View(city_re_stats)
 
-Quandl('ZILLOW/C11731_IMP') 
+Quandl('ZILLOW/C11731_MPCDAH') 
