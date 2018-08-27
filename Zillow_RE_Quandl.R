@@ -9,6 +9,7 @@ Date <- as.Date(as.yearmon(seq.Date(as.Date('2010-01-01'),by='month',
                                     length.out = 108)),frac=1)
 date_master_df <- data.frame(Date)
 
+# code C11731 refers to the city of San Antonio (good to double-check)
 mydata1 <- Quandl('ZILLOW/C11731_PRRAH') 
 colnames(mydata1)[colnames(mydata1) == 'Value'] <- 'price_rent_ratio'
 mydata2 <- Quandl('ZILLOW/C11731_MLPFAH') 
@@ -25,3 +26,4 @@ city_re_stats <- list(date_master_df, mydata1, mydata2, mydata3, mydata4) %>%
 str(city_re_stats)
 View(city_re_stats)
 
+ 
