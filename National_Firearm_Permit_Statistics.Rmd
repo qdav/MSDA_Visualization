@@ -1,6 +1,9 @@
 ---
 title: "National Firearm Permit Statistics"
-output: html_document
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
