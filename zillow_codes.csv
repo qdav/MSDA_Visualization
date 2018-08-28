@@ -1,0 +1,14 @@
+zillow_code, zillow_code_column
+IMP, inv_measure
+IMSP, inv_measure_ssa
+LPCSAL, list_price_cut_all_homes
+MLPAH, med_list_price_all
+MLPCC, med_list_price_condo
+MLPCC, med_list_price_condo
+MLPDT, med_list_price_duplex
+MLP5B, med_list_price_5b
+MLP4B, med_list_price_4b
+MLP3B, med_list_price_3b
+MLP2B, med_list_price_2b
+MLP1B, med_list_price_1b
+MLPSF, med_list_price_sing_fam
