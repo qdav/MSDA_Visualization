@@ -34,7 +34,7 @@ zillow_df_list[[1]] <- as.data.frame(date_master_df)
 #get zillow data for San Antonio
 for (i in 1:nrow(code_list_df)) {   
     print(code_list_df[i, 1])
-    df = try(getZillowData("ZILLOW/", "C", "11734", 
+    df = try(getZillowData("ZILLOW/", "C", "11731", 
                   code_list_df[i, 1], code_list_df[i, 2]), FALSE)
     if("try-error" %in% class(df)) df = data.frame(Date, NA)
     
