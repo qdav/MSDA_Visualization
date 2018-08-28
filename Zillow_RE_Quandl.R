@@ -41,5 +41,3 @@ city_re_stats <-  zillow_df_list %>% reduce(left_join, by = "Date")
 
 str(city_re_stats)
 View(city_re_stats)
-
-Quandl('ZILLOW/C11731_MRPAH') 
