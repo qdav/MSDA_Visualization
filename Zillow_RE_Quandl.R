@@ -1,37 +1,45 @@
 #install.packages("Quandl")
 
 # Quinn's api_key being used here
-Quandl.api_key("awJDWs_WvUiV6VWC8rLb")
 library(Quandl)
 library(tidyverse)
+Quandl.api_key("awJDWs_WvUiV6VWC8rLb")
 
-#creating a list of all-inclusive dates from which to left-join
-Date <- as.Date(as.yearmon(seq.Date(as.Date('2010-01-01'),by='month',
-                                    length.out = 108)),frac=1)
-date_master_df <- data.frame(Date)
-
-# vectors to hold Zillow codes and new column names
-zillow_code <- c('IMP', 'IMSP', 'LPCSAL', 'MLPAH')
-zillow_code_column <- c('inv_measure', 'inv_measure_ssa', 
-                        'list_price_cut_all_homes', 'med_list_price_all')
-code_list_df <- data.frame(zillow_code, zillow_code_column)
-
-
-output <- list()
-output[[1]] <- as.data.frame(date_master_df)
-
-for (i in 1:nrow(code_list_df)) {            
-  print(code_list_df[i, 1])
-  # code C11731 refers to the city of San Antonio (good to double-check)
-  zillow_c = paste('ZILLOW/C11731_', code_list_df[i, 1], sep="")
-  temp_df <- Quandl(zillow_c)
-  colnames(temp_df)[colnames(temp_df) == 'Value'] <- as.character (code_list_df[i, 2])
-  output[[i+1]] <- as.data.frame(temp_df)
+getZillowData <- function(zillow_const, zillow_area_cat, zillow_area_code, 
+                          indicator_code,  new_column_name) {
+  zillow_string = paste(zillow_const, zillow_area_cat,
+                        zillow_area_code, "_",indicator_code,  sep="")
+  print(zillow_string)
+  temp_df <- Quandl(zillow_string)
+  colnames(temp_df)[colnames(temp_df) == 'Value'] <- new_column_name
+  return(temp_df)
 }
 
-city_re_stats <-  output %>% reduce(left_join, by = "Date")
+#creating a list of all-inclusive dates (since 2010) from which to left-join
+elapsed_months <- length(seq(from=as.Date("2010-01-01"), Sys.Date(), by='month')) - 1
+Date <- as.Date(as.yearmon(seq.Date(as.Date('2010-01-01'),by='month',
+                                    length.out = elapsed_months)),frac=1)
+date_master_df <- data.frame(Date)
+
+#data frame of zillow RE codes and column nmaes
+code_list_df <- read_csv("zillow_codes.csv")
+
+#list to hold zillow data frames 
+zillow_df_list <- list()
+zillow_df_list[[1]] <- as.data.frame(date_master_df)
+
+#get zillow data for San Antonio
+for (i in 1:nrow(code_list_df)) {   
+  print(code_list_df[i, 1])
+  df = getZillowData("ZILLOW/", "C", "11731", 
+                code_list_df[i, 1], code_list_df[i, 2])
+  zillow_df_list[[i+1]] <- as.data.frame(df)
+}
+
+#combine all the data sets using left join
+city_re_stats <-  zillow_df_list %>% reduce(left_join, by = "Date")
 
 str(city_re_stats)
 View(city_re_stats)
 
-#Quandl('ZILLOW/C11731_MRPAH') 
+Quandl('ZILLOW/C11731_MRPAH') 
