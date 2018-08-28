@@ -1,8 +1,11 @@
 #install.packages("Quandl")
+#install.packages("tidyverse")
 
 # Quinn's api_key being used here
 library(Quandl)
 library(tidyverse)
+
+
 Quandl.api_key("awJDWs_WvUiV6VWC8rLb")
 
 getZillowData <- function(zillow_const, zillow_area_cat, zillow_area_code, 
@@ -30,10 +33,12 @@ zillow_df_list[[1]] <- as.data.frame(date_master_df)
 
 #get zillow data for San Antonio
 for (i in 1:nrow(code_list_df)) {   
-  print(code_list_df[i, 1])
-  df = getZillowData("ZILLOW/", "C", "11731", 
-                code_list_df[i, 1], code_list_df[i, 2])
-  zillow_df_list[[i+1]] <- as.data.frame(df)
+    print(code_list_df[i, 1])
+    df = try(getZillowData("ZILLOW/", "C", "11734", 
+                  code_list_df[i, 1], code_list_df[i, 2]), FALSE)
+    if("try-error" %in% class(df)) df = data.frame(Date, NA)
+    
+    zillow_df_list[[i+1]] <- as.data.frame(df)
 }
 
 #combine all the data sets using left join
