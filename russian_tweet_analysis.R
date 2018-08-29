@@ -1,4 +1,4 @@
-# This code is from Jonathan BouchetBeware
+# This code is from Jonathan Bouchet
 
 #install.packages("ggplot2")
 #install.packages("dplyr")
