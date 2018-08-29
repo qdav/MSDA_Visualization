@@ -70,3 +70,16 @@ ggplot(per_week, aes(x = week, y = weekdays, fill=week_count)) +
         legend.key.width = unit(1, "cm"),
         strip.text = element_text(hjust = 0.01, face = "bold", size = 10)) + ggtitle('Daily count of Tweets') + guides(fill = guide_colorbar(barwidth = 53, barheight = 1))
 
+
+g1<-tweets %>% filter(year==2016) %>% group_by(DayTS) %>% summarise(count=n()) %>% 
+  ggplot(aes(x=DayTS,y=count)) + geom_point(size=1) + geom_line(alpha=.5,size=1) +
+  theme_fivethirtyeight() + labs(title="2016 timeline: daily tweets count")
+g1 + 
+  geom_vline(xintercept=as.numeric(as.Date('2016-07-21')),color='red') + 
+  ggplot2::annotate("text", x=as.Date("2016-06-01"), y = 3000, label = "RNC Convention:\nTrump won the presidential nomination", size=4, colour="red") + geom_vline(xintercept=as.numeric(as.Date('2016-11-08')),color='red') + 
+  ggplot2::annotate("text", x=as.Date("2016-12-12"), y = 3000, label = "U.S Presidential election:\n Trump won the election", size=4, colour="red") + geom_vline(xintercept=as.numeric(as.Date('2016-03-19')),color='blue') + 
+  ggplot2::annotate("text", x=as.Date("2016-02-19"), y = 3000, label = "Clinton\'s campaign\n chairman incident[1]", size=4, colour="blue") + 
+  labs(subtitle='[1]: Clinton campaign chairman John Podesta is sent an email that encourages him to change his email password, probably precipitating the hack of his account') + 
+  geom_vline(xintercept=as.numeric(as.Date('2016-10-06')),color='#006400') + 
+  ggplot2::annotate("text", x=as.Date("2016-08-28"), y = 4000, label = "WikiLeaks begins releasing\n emails stolen from Podesta", size=4, colour="darkgreen")
+
