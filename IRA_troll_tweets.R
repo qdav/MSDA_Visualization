@@ -33,41 +33,45 @@ library(syuzhet)
 tweet_list <- list() 
 listcsv <- dir(pattern = "IRAhandle_tweets_.") 
 for (k in 1:length(listcsv)){
-  tweet_list[[k]] <- read.csv(listcsv[k], sep=',', stringsAsFactors=F)
+  print(paste("beginning processing of file", listcsv[k], Sys.time()," ")) 
+  tweets_df <- read.csv(listcsv[k], sep=',', stringsAsFactors=F)
+  
+  
+  tweets_df$publish_date<-mdy_hm(tweets_df$publish_date)
+  tweets_df$publish_day<-as.Date(tweets_df$publish_date)
+  tweets_df$publish_hour<-hour(tweets_df$publish_date)
+  tweets_df$harvested_date<-mdy_hm(tweets_df$harvested_date)
+  tweets_df$weekdays<-weekdays(tweets_df$publish_date)
+  tweets_df$weekdays <- factor(tweets_df$weekdays, levels = rev(c("Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday")))
+  
+  
+  #control how many tweets you work with
+  tweets_sub <- tweets_df[1:10000,]
+  
+  # get sentiment and create columns in tweet data set
+  tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
+  tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
+  tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
+  tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
+  tweets_sub$fear <- tweets_sub$nrc_sentiment$fear
+  tweets_sub$joy <- tweets_sub$nrc_sentiment$joy
+  tweets_sub$sadness <- tweets_sub$nrc_sentiment$sadness
+  tweets_sub$surprise <- tweets_sub$nrc_sentiment$surprise
+  tweets_sub$trust <- tweets_sub$nrc_sentiment$trust
+  tweets_sub$negative <- tweets_sub$nrc_sentiment$negative
+  tweets_sub$positive <- tweets_sub$nrc_sentiment$positive
+  tweets_sub$nrc_sentiment <- NULL
+
+  tweet_list[[k]] <- tweets_sub
+  print(paste("finishing processing of file", listcsv[k], Sys.time()," "))  
+  
 }
 
+
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
-str(tweets)
-
-
-tweets$publish_date<-mdy_hm(tweets$publish_date)
-tweets$publish_day<-as.Date(tweets$publish_date)
-tweets$publish_hour<-hour(tweets$publish_date)
-tweets$harvested_date<-mdy_hm(tweets$harvested_date)
-tweets$weekdays<-weekdays(tweets$publish_date)
-tweets$weekdays <- factor(tweets$weekdays, levels = rev(c("Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday")))
-
-
-#control how many tweets you work with
-tweets_sub <- tweets[1:10000,]
-
-# get sentiment and create columns in tweet data set
-tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
-tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
-tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
-tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
-tweets_sub$fear <- tweets_sub$nrc_sentiment$fear
-tweets_sub$joy <- tweets_sub$nrc_sentiment$joy
-tweets_sub$sadness <- tweets_sub$nrc_sentiment$sadness
-tweets_sub$surprise <- tweets_sub$nrc_sentiment$surprise
-tweets_sub$trust <- tweets_sub$nrc_sentiment$trust
-tweets_sub$negative <- tweets_sub$nrc_sentiment$negative
-tweets_sub$positive <- tweets_sub$nrc_sentiment$positive
-tweets_sub$nrc_sentiment <- NULL
-
 
 # total author sentiment 
-author_sentiment <- select(tweets_sub, author, anger,
+author_sentiment <- select(tweets, author, anger,
                            anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, positive) %>% 
   group_by(author) %>% 
@@ -90,7 +94,7 @@ View(author_sentiment)
 #sentiment over time
 
 
-sentiment_over_time <- select(tweets_sub, publish_day,
+sentiment_over_time <- select(tweets, publish_day,
                            anger, anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, 
                            positive ) %>%
@@ -125,5 +129,5 @@ ggplot(data = sentiment_over_time) +
   #geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
   #geom_line(mapping = aes(x = publish_day, y = trust, color="Trust"))
 
-ggplot(data = tweets_sub) + 
+ggplot(data = tweets) + 
   geom_bar(mapping = aes(x = publish_hour))
