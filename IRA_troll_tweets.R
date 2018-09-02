@@ -39,14 +39,17 @@ for (k in 1:length(listcsv)){
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 str(tweets)
 
+
 tweets$publish_date<-mdy_hm(tweets$publish_date)
 tweets$publish_day<-as.Date(tweets$publish_date)
+tweets$publish_hour<-hour(tweets$publish_date)
 tweets$harvested_date<-mdy_hm(tweets$harvested_date)
 tweets$weekdays<-weekdays(tweets$publish_date)
 tweets$weekdays <- factor(tweets$weekdays, levels = rev(c("Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday")))
 
+
 #control how many tweets you work with
-tweets_sub <- tweets[1:1000,]
+tweets_sub <- tweets[1:10000,]
 
 # get sentiment and create columns in tweet data set
 tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
@@ -111,3 +114,16 @@ View(sentiment_over_time)
 ggplot(data = sentiment_over_time) + 
   geom_line(mapping = aes(x = publish_day, y = positive, color="Positive")) +
   geom_line(mapping = aes(x = publish_day, y = negative, color="Negative"))
+
+ggplot(data = sentiment_over_time) + 
+  #geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) + 
+  #geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
+  #geom_line(mapping = aes(x = publish_day, y = disgust, color="Disgust")) + 
+  geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
+  geom_line(mapping = aes(x = publish_day, y = joy, color="Joy"))  
+  #geom_line(mapping = aes(x = publish_day, y = sadness, color="Sadness")) + 
+  #geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
+  #geom_line(mapping = aes(x = publish_day, y = trust, color="Trust"))
+
+ggplot(data = tweets_sub) + 
+  geom_bar(mapping = aes(x = publish_hour))
