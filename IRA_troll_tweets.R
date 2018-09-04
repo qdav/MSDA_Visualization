@@ -46,7 +46,7 @@ for (k in 1:length(listcsv)){
   
   
   #control how many tweets you work with
-  tweets_sub <- tweets_df[1:10000,]
+  tweets_sub <- tweets_df #[1:10000,]
   
   # get sentiment and create columns in tweet data set
   tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
@@ -71,10 +71,10 @@ for (k in 1:length(listcsv)){
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
 # total author sentiment 
-author_sentiment <- select(tweets, author, anger,
+author_sentiment <- select(tweets, author, account_type, anger,
                            anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, positive) %>% 
-  group_by(author) %>% 
+    group_by(author, account_type) %>% 
   summarise(
     anger = sum(anger, na.rm = TRUE),
     anticipation = sum(anticipation, na.rm = TRUE),
@@ -94,11 +94,12 @@ View(author_sentiment)
 #sentiment over time
 
 
-sentiment_over_time <- select(tweets, publish_day,
+sentiment_over_time <- select(tweets, publish_date, publish_day, account_type,
                            anger, anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, 
                            positive ) %>%
-  group_by(publish_day) %>% 
+  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) %>%
+  group_by(publish_day, account_type) %>% 
   summarise(
     anger = sum(anger, na.rm = TRUE),
     anticipation = sum(anticipation, na.rm = TRUE),
@@ -117,17 +118,25 @@ View(sentiment_over_time)
 
 ggplot(data = sentiment_over_time) + 
   geom_line(mapping = aes(x = publish_day, y = positive, color="Positive")) +
-  geom_line(mapping = aes(x = publish_day, y = negative, color="Negative"))
+  geom_line(mapping = aes(x = publish_day, y = negative, color="Negative")) + 
+facet_wrap(~account_type, nrow = 2)
 
 ggplot(data = sentiment_over_time) + 
-  #geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) + 
+  #geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) +
   #geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
   #geom_line(mapping = aes(x = publish_day, y = disgust, color="Disgust")) + 
-  geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
-  geom_line(mapping = aes(x = publish_day, y = joy, color="Joy"))  
+  #geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
+  #geom_line(mapping = aes(x = publish_day, y = joy, color="Joy")) + 
   #geom_line(mapping = aes(x = publish_day, y = sadness, color="Sadness")) + 
   #geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
-  #geom_line(mapping = aes(x = publish_day, y = trust, color="Trust"))
+  geom_line(mapping = aes(x = publish_day, y = trust, color="Trust")) + 
+facet_wrap(~account_type, nrow = 2)
 
-ggplot(data = tweets) + 
-  geom_bar(mapping = aes(x = publish_hour))
+
+publish_hour <- select(tweets, publish_hour, publish_date, account_type) %>%
+  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) 
+  
+ggplot(data = publish_hour) + 
+  geom_bar(mapping = aes(x = publish_hour)) + 
+facet_wrap(~account_type, nrow = 2)
+
