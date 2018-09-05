@@ -24,7 +24,8 @@ Q1
 d1 <- diamonds
 ggplot(d1, aes(x = carat, y = price)) +
   geom_point(aes(color = as.character(clarity)),  alpha=0.3) +
-  labs(title="Scatterplot of Diamond Prices", x="Diamond Carats", y="Diamond Price")
+  labs(title="Scatterplot of Diamond Prices", x="Diamond Carats", y="Diamond Price") + 
+  theme_bw()
 
 ```
 
@@ -34,7 +35,8 @@ Q2
 ggplot(d1, aes(x = carat, y = price)) +
   geom_point(aes(color = as.character(clarity)),  alpha=0.3, show.legend = FALSE) +
   labs(title="Scatterplot of Diamond Prices", x="Diamond Carats", y="Diamond Price") + 
-  facet_wrap("clarity")
+  facet_wrap("clarity") + 
+  theme_bw()
 ```
 
 Q3
@@ -42,7 +44,8 @@ Q3
 ```{r}
 ggplot(d1, aes(x = table, y = price)) +
   geom_smooth(method="lm", color="red", linetype=2) + 
-  labs(x="Table", y="Price") 
+  labs(x="Table", y="Price") + 
+  theme_bw()
 
 ```
 
@@ -50,23 +53,27 @@ ggplot(d1, aes(x = table, y = price)) +
 ```{r}
 ggplot(d1, aes(x = depth, y = price)) +
   geom_smooth(method="lm", color="white", linetype=4) + 
-  labs(x="Depth", y="Price") 
+  labs(x="Depth", y="Price") + 
+  theme_bw()
 ```
 
 Q4
 ```{r}
 ggplot(data = d1) + 
-  geom_bar(mapping = aes(x = price))
+  geom_bar(mapping = aes(x = price)) + 
+  theme_bw()
 ```
 
 ```{r}
 ggplot(data = d1) + 
-  geom_histogram(mapping = aes(x = price))
+  geom_histogram(mapping = aes(x = price)) + 
+  theme_bw()
 ```
 
 ```{r}
 ggplot(data = d1) + 
-  geom_bar(mapping = aes(x = clarity, fill=clarity), show.legend = FALSE)
+  geom_bar(mapping = aes(x = clarity, fill=clarity), show.legend = FALSE) + 
+  theme_bw()
 ```
 
 ```{r}
@@ -76,4 +83,10 @@ ggplot(d1, aes(x = cut, y = depth)) +
   theme_bw()
 ```
 
+```{r}
+ggplot(d1, aes(x = x, y = price)) +
+  geom_smooth(method="lm", color="green") +
+  geom_smooth(color="blue", se=FALSE) + 
+  theme_bw()
+```
 
