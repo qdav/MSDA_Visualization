@@ -46,7 +46,7 @@ for (k in 1:length(listcsv)){
   
   
   #control how many tweets you work with
-  tweets_sub <- tweets_df[1:10000,]
+  tweets_sub <- tweets_df #[1:10000,]
   
   # get sentiment and create columns in tweet data set
   tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
@@ -131,3 +131,5 @@ ggplot(data = sentiment_over_time) +
 
 ggplot(data = tweets) + 
   geom_bar(mapping = aes(x = publish_hour))
+
+
