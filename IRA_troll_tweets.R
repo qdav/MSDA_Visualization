@@ -1,4 +1,5 @@
 # The code to load tweets and users is from Jonathan Bouchet
+# The LDA code is from Rachael Tatman
 
 #install.packages("ggplot2")
 #install.packages("dplyr")
@@ -100,10 +101,23 @@ remove_stop_words <- function(term_list) {
   
   # check out what the cleaned documents look like (should just be a bunch of content words)
   # in alphabetic order
-  head(cleaned_documents)
+  #head(cleaned_documents)
 
 }
 
+
+# categories for day hours
+day_bins <- data.frame("publish_hour" = 0:23, 
+                       "time_category" = c("evening leisure", "evening leisure", "evening leisure", "evening leisure",
+                                           "sleep", "sleep", "sleep", "sleep", "sleep", "sleep", "sleep", "sleep",
+                                           "2 hrs before work", "2 hrs before work",
+                                           "morning work", "morning work", 
+                                           "lunch", "lunch", 
+                                           "afternoon work", "afternoon work", "afternoon work", "afternoon work",
+                                           "2 hrs after work", "2 hrs after work"))
+                         
+                         
+                         
 
 
 # read in tweet data files and combine
@@ -113,6 +127,8 @@ for (k in 1:length(listcsv)){
   print(paste("beginning processing of file", listcsv[k], Sys.time()," ")) 
   tweets_df <- read.csv(listcsv[k], sep=',', stringsAsFactors=F)
   
+  # filter out non-English tweets before any other processing
+  tweets_df <- filter(tweets_df, account_category != "NonEnglish")
   
   tweets_df$publish_date<-mdy_hm(tweets_df$publish_date)
   tweets_df$publish_day<-as.Date(tweets_df$publish_date)
@@ -120,11 +136,16 @@ for (k in 1:length(listcsv)){
   tweets_df$harvested_date<-mdy_hm(tweets_df$harvested_date)
   tweets_df$weekdays<-weekdays(tweets_df$publish_date)
   tweets_df$weekdays <- factor(tweets_df$weekdays, levels = rev(c("Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday")))
-  
-  
+
+   
   #control how many tweets you work with
-  tweets_sub <- tweets_df[1:100,]
+  tweets_sub <- tweets_df [1:1000,]
+
+  # join to daytime_categories
+  tweets_sub <-select(tweets_sub, everything()) %>%
+    left_join(day_bins, by = "publish_hour")
   
+    
   # get sentiment and create columns in tweet data set
   tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
   tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
@@ -139,6 +160,7 @@ for (k in 1:length(listcsv)){
   tweets_sub$positive <- tweets_sub$nrc_sentiment$positive
   tweets_sub$nrc_sentiment <- NULL
 
+  
   tweet_list[[k]] <- tweets_sub
   print(paste("finishing processing of file", listcsv[k], Sys.time()," "))  
   
@@ -146,9 +168,9 @@ for (k in 1:length(listcsv)){
 
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
-clean_terms <-remove_stop_words(tweets$content)
+#clean_terms <-remove_stop_words(tweets$content)
 
-top_terms_by_topic_LDA(clean_terms, number_of_topics = 4)
+#top_terms_by_topic_LDA(clean_terms, number_of_topics = 4)
 
 # total author sentiment 
 author_sentiment <- select(tweets, author, account_type, anger,
@@ -177,7 +199,7 @@ View(author_sentiment)
 sentiment_over_time <- select(tweets, publish_date, publish_day, account_type,
                            anger, anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, 
-                           positive ) %>%
+                           positive, time_category ) %>%
   filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) %>%
   group_by(publish_day, account_type) %>% 
   summarise(
@@ -194,7 +216,7 @@ sentiment_over_time <- select(tweets, publish_date, publish_day, account_type,
     tweet_count = n()
   )
   
-View(sentiment_over_time)
+
 
 ggplot(data = sentiment_over_time) + 
   geom_line(mapping = aes(x = publish_day, y = positive, color="Positive")) +
@@ -221,6 +243,6 @@ ggplot(data = publish_hour) +
 facet_wrap(~account_type, nrow = 2)
 
 ggplot(data = tweets) + 
-  geom_bar(mapping = aes(x = publish_hour))
+  geom_bar(mapping = aes(x = time_category))
 
 
