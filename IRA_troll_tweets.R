@@ -13,6 +13,8 @@
 #install.packages("tidyr")
 #install.packages("tidyverse")
 #install.packages("syuzhet")
+#install.packages("topicmodels") # for LDA topic modelling 
+#install.packages("SnowballC") # for stemming
 
 library(ggplot2)
 library(dplyr)
@@ -27,6 +29,81 @@ library(viridis)
 library(tidyr)
 library(tidyverse)
 library(syuzhet)
+library(topicmodels) # for LDA topic modelling 
+library(SnowballC) # for stemming
+
+
+top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataframe
+                                   plot = T, # return a plot? TRUE by defult
+                                   number_of_topics = 4) # number of topics (4 by default)
+{    
+  # create a corpus (type of object expected by tm) and document term matrix
+  Corpus <- Corpus(VectorSource(input_text)) # make a corpus object
+  DTM <- DocumentTermMatrix(Corpus) # get the count of words/document
+  
+  # remove any empty rows in our document term matrix (if there are any 
+  # we'll get an error when we try to run our LDA)
+  unique_indexes <- unique(DTM$i) # get the index of each unique value
+  DTM <- DTM[unique_indexes,] # get a subset of only those indexes
+  
+  # preform LDA & get the words/topic in a tidy text format
+  lda <- LDA(DTM, k = number_of_topics, control = list(seed = 1234))
+  topics <- tidy(lda, matrix = "beta")
+  
+  # get the top ten terms for each topic
+  top_terms <- topics  %>% # take the topics data frame and..
+    group_by(topic) %>% # treat each topic as a different group
+    top_n(10, beta) %>% # get the top 10 most informative words
+    ungroup() %>% # ungroup
+    arrange(topic, -beta) # arrange words in descending informativeness
+  
+  # if the user asks for a plot (TRUE by default)
+  if(plot == T){
+    # plot the top ten terms for each topic in order
+    top_terms %>% # take the top terms
+      mutate(term = reorder(term, beta)) %>% # sort terms by beta value 
+      ggplot(aes(term, beta, fill = factor(topic))) + # plot beta by theme
+      geom_col(show.legend = FALSE) + # as a bar plot
+      facet_wrap(~ topic, scales = "free") + # which each topic in a seperate plot
+      labs(x = NULL, y = "Beta") + # no x label, change y label 
+      coord_flip() # turn bars sideways
+  }else{ 
+    # if the user does not request a plot
+    # return a list of sorted terms instead
+    return(top_terms)
+  }
+}
+
+remove_stop_words <- function(term_list) {
+  # create a document term matrix to clean
+    reviewsCorpus <- Corpus(VectorSource(term_list)) 
+  reviewsDTM <- DocumentTermMatrix(reviewsCorpus)
+  
+  # convert the document term matrix to a tidytext corpus
+  reviewsDTM_tidy <- tidy(reviewsDTM)
+  
+  # I'm going to add my own custom stop words that I don't think will be
+  # very informative in hotel reviews
+  custom_stop_words <- tibble(word = c("https", "http", "amp"))
+  
+  # remove stopwords
+  reviewsDTM_tidy_cleaned <- reviewsDTM_tidy %>% # take our tidy dtm and...
+    anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
+    anti_join(custom_stop_words, by = c("term" = "word")) # remove my custom stopwords
+  
+  # reconstruct cleaned documents (so that each word shows up the correct number of times)
+  cleaned_documents <- reviewsDTM_tidy_cleaned %>%
+    group_by(document) %>% 
+    mutate(terms = toString(rep(term, count))) %>%
+    select(document, terms) %>%
+    unique()
+  
+  # check out what the cleaned documents look like (should just be a bunch of content words)
+  # in alphabetic order
+  head(cleaned_documents)
+
+}
+
 
 
 # read in tweet data files and combine
@@ -46,7 +123,7 @@ for (k in 1:length(listcsv)){
   
   
   #control how many tweets you work with
-  tweets_sub <- tweets_df #[1:10000,]
+  tweets_sub <- tweets_df[1:100,]
   
   # get sentiment and create columns in tweet data set
   tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
@@ -67,8 +144,11 @@ for (k in 1:length(listcsv)){
   
 }
 
-
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
+
+clean_terms <-remove_stop_words(tweets$content)
+
+top_terms_by_topic_LDA(clean_terms, number_of_topics = 4)
 
 # total author sentiment 
 author_sentiment <- select(tweets, author, account_type, anger,
@@ -140,10 +220,7 @@ ggplot(data = publish_hour) +
   geom_bar(mapping = aes(x = publish_hour)) + 
 facet_wrap(~account_type, nrow = 2)
 
-<<<<<<< HEAD
 ggplot(data = tweets) + 
   geom_bar(mapping = aes(x = publish_hour))
 
 
-=======
->>>>>>> eee2af6d0b336792f17b2a4a87e686a1c81e4573
