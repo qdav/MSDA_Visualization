@@ -37,7 +37,7 @@ users<-data.frame(users %>% filter(created_at !=""))
 
 #tweets dataset
 tweets<-read.csv('tweets.csv',sep=',',stringsAsFactors=F)
-tweets$DayTS<-as.Date(tweets$created_str,format="%Y-%m-%d")
+tweets$DayTS<-as_datetime(tweets$created_str,format="%Y/%m/%d %H:%M")
 tweets$year<-year(tweets$DayTS)
 tweets$month<-month(tweets$DayTS)
 tweets$day<-day(tweets$DayTS)
@@ -60,6 +60,7 @@ View(a_sent)
 
 
 colSums(a_sent)
+
 
 #per_week <- tweets %>% select(year, week, weekdays) %>% na.omit() %>% group_by(year,week,weekdays) %>% summarize(week_count=n())         
 #pal='D'
