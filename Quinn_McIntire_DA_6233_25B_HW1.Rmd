@@ -3,8 +3,8 @@ title: "Quinn_McIntire_DA_6233_2B5_HW1"
 author: "Quinn McIntire"
 date: "September 5, 2018"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
