@@ -1,8 +1,13 @@
 ---
 title: "Quinn_McIntire_DA_6233_2B5_HW1"
-author: "Quinn McIntire"
+author: "Quinn McIntire (uqr395) "
 date: "September 5, 2018"
 output:
+<<<<<<< HEAD
+=======
+  html_document: default
+  
+>>>>>>> 26d5ac421b756be756f9149bd696592d95d672d6
   pdf_document: default
   html_document: default
 ---
