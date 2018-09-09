@@ -211,7 +211,7 @@ tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
 top_terms_by_topic_LDA(tweetSub_cleaned_documents$terms, number_of_topics = 2)
 
 
-# ************************* Start LDA against subset tweets ***************************
+# ************************* End LDA against subset tweets ***************************
 
 # total author sentiment 
 author_sentiment <- dplyr::select(tweets, author, account_type, anger,
