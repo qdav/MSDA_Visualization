@@ -67,7 +67,8 @@ top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataf
       geom_col(show.legend = FALSE) + # as a bar plot
       facet_wrap(~ topic, scales = "free") + # which each topic in a seperate plot
       labs(x = NULL, y = "Beta") + # no x label, change y label 
-      coord_flip() # turn bars sideways
+      theme(axis.text = element_text(size=20,face="bold")) + 
+      coord_flip()   # turn bars sideways
   }else{ 
     # if the user does not request a plot
     # return a list of sorted terms instead
@@ -75,6 +76,7 @@ top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataf
   }
 }
 
+#View(stop_words)
 
 # categories for day hours
 day_bins <- data.frame("publish_hour" = 0:23, 
@@ -109,7 +111,7 @@ for (k in 1:length(listcsv)){
 
    
   #control how many tweets you work with
-  tweets_sub <- tweets_df [1:1000,]
+  tweets_sub <- tweets_df #[1:100,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
@@ -139,62 +141,63 @@ for (k in 1:length(listcsv)){
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
 
-# *********************** Experimenting with topic analysis **********************
+# *********************** LDA against full tweets **********************
 
 # create a document term matrix to clean
-tweetCorpus <- Corpus(VectorSource(tweets$content)) 
-tweetDTM <- DocumentTermMatrix(tweetCorpus)
+#tweetCorpus <- Corpus(VectorSource(tweets$content)) 
+#tweetDTM <- DocumentTermMatrix(tweetCorpus)
 
 # convert the document term matrix to a tidytext corpus
-tweetDTM_tidy <- tidy(tweetDTM)
+#tweetDTM_tidy <- tidy(tweetDTM)
 
 # I'm going to add my own custom stop words that I don't think will be
 # very informative in hotel reviews
-custom_stop_words <- tibble(word = c("https", "http", "amp"))
+#custom_stop_words <- tibble(word = c("https", "http", "amp"))
 
 # remove stopwords
-tweetDTM_tidy_cleaned <- tweetDTM_tidy %>% # take our tidy dtm and...
-  anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
-  anti_join(custom_stop_words, by = c("term" = "word")) # remove my custom stopwords
+#tweetDTM_tidy_cleaned <- tweetDTM_tidy %>% # take our tidy dtm and...
+#  anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
+#  anti_join(custom_stop_words, by = c("term" = "word")) # remove my custom stopwords
 
 # reconstruct cleaned documents (so that each word shows up the correct number of times)
-cleaned_documents <- tweetDTM_tidy_cleaned %>%
-  group_by(document) %>% 
-  mutate(terms = toString(rep(term, count))) %>%
-  dplyr::select(document, terms) %>%
-  unique()
+#cleaned_documents <- tweetDTM_tidy_cleaned %>%
+#  group_by(document) %>% 
+#  mutate(terms = toString(rep(term, count))) %>%
+#  dplyr::select(document, terms) %>%
+#  unique()
 
 # check out what the cleaned documents look like (should just be a bunch of content words)
 # in alphabetic order
-head(cleaned_documents)
+#head(cleaned_documents)
 
-top_terms_by_topic_LDA(cleaned_documents$terms, number_of_topics = 4)
+#top_terms_by_topic_LDA(cleaned_documents$terms, number_of_topics = 4)
 
-# ***************************** End Experimenting with topic analyis ******************
+# ***************************** End LDA against full tweets  ******************
 
-# July 28, 2017 - Aug 26, 2017 "Right" topic analysis ******************************
+#  **************************** Start LDA against subset tweets ****************
 
-july17_df <- dplyr::select(tweets, everything()) %>%
-  filter(publish_date >= "2016-07-28" & publish_date <= "2017-08-26" )
+tweet_sub_df <- dplyr::select(tweets, content, publish_date, account_type) %>%
+  filter(publish_date >= "2016-10-05" & publish_date <= "2016-10-08" & 
+           account_type == "left" )
 
 
-july17Corpus <- Corpus(VectorSource(july17_df$content)) 
-july17DTM <- DocumentTermMatrix(july17Corpus)
+tweetSubCorpus <- Corpus(VectorSource(tweet_sub_df$content)) 
+tweetSubDTM <- DocumentTermMatrix(tweetSubCorpus)
 
 # convert the document term matrix to a tidytext corpus
-july17DTM_tidy <- tidy(july17DTM)
+tweetSubDTM_tidy <- tidy(tweetSubDTM)
 
 # I'm going to add my own custom stop words that I don't think will be
 # very informative in hotel reviews
 custom_stop_words <- tibble(word = c("https", "http", "amp"))
 
 # remove stopwords
-july17DTM_tidy_cleaned <- july17DTM_tidy %>% # take our tidy dtm and...
+tweetSubDTM_tidy_cleaned <- tweetSubDTM_tidy %>% # take our tidy dtm and...
   anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
   anti_join(custom_stop_words, by = c("term" = "word")) # remove my custom stopwords
 
 # reconstruct cleaned documents (so that each word shows up the correct number of times)
-july17_cleaned_documents <- july17DTM_tidy_cleaned %>%
+tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
   group_by(document) %>% 
   mutate(terms = toString(rep(term, count))) %>%
   dplyr::select(document, terms) %>%
@@ -205,9 +208,10 @@ july17_cleaned_documents <- july17DTM_tidy_cleaned %>%
 #head(cleaned_documents)
 
 
-top_terms_by_topic_LDA(july17_cleaned_documents$terms, number_of_topics = 6)
+top_terms_by_topic_LDA(tweetSub_cleaned_documents$terms, number_of_topics = 2)
 
-# **********************************************************************************
+
+# ************************* Start LDA against subset tweets ***************************
 
 # total author sentiment 
 author_sentiment <- dplyr::select(tweets, author, account_type, anger,
@@ -237,7 +241,8 @@ sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_
                            anger, anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, 
                            positive, time_category ) %>%
-  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) %>%
+  filter(publish_date >= "2015-07-20" & publish_date <= "2015-07-24" &
+                         account_type %in% c("Right")) %>%
   group_by(publish_day, account_type) %>% 
   summarise(
     anger = sum(anger, na.rm = TRUE),
@@ -261,13 +266,13 @@ ggplot(data = sentiment_over_time) +
 facet_wrap(~account_type, nrow = 2)
 
 ggplot(data = sentiment_over_time) + 
-  #geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) +
-  #geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
-  #geom_line(mapping = aes(x = publish_day, y = disgust, color="Disgust")) + 
-  #geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
-  #geom_line(mapping = aes(x = publish_day, y = joy, color="Joy")) + 
-  #geom_line(mapping = aes(x = publish_day, y = sadness, color="Sadness")) + 
-  #geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
+  geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) +
+  geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
+  geom_line(mapping = aes(x = publish_day, y = disgust, color="Disgust")) + 
+  geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
+  geom_line(mapping = aes(x = publish_day, y = joy, color="Joy")) + 
+  geom_line(mapping = aes(x = publish_day, y = sadness, color="Sadness")) + 
+  geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
   geom_line(mapping = aes(x = publish_day, y = trust, color="Trust")) + 
 facet_wrap(~account_type, nrow = 2)
 
