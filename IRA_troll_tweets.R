@@ -16,6 +16,7 @@
 #install.packages("syuzhet")
 #install.packages("topicmodels") # for LDA topic modelling 
 #install.packages("SnowballC") # for stemming
+#install.packages("wordcloud")
 
 library(ggplot2)
 library(dplyr)
@@ -32,8 +33,10 @@ library(tidyverse)
 library(syuzhet)
 library(topicmodels) # for LDA topic modelling 
 library(SnowballC) # for stemming
+library(wordcloud)
 
 
+# function to perform sentiment and emotion analysis
 top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataframe
                                    plot = T, # return a plot? TRUE by defult
                                    number_of_topics = 4) # number of topics (4 by default)
@@ -76,7 +79,86 @@ top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataf
   }
 }
 
-#View(stop_words)
+
+#++++++++++++++++++++++++++++++++++
+# rquery.wordcloud() : Word cloud generator
+# - http://www.sthda.com
+#+++++++++++++++++++++++++++++++++++
+# x : character string (plain text, web url, txt file path)
+# type : specify whether x is a plain text, a web page url or a file path
+# lang : the language of the text
+# excludeWords : a vector of words to exclude from the text
+# textStemming : reduces words to their root form
+# colorPalette : the name of color palette taken from RColorBrewer package, 
+# or a color name, or a color code
+# min.freq : words with frequency below min.freq will not be plotted
+# max.words : Maximum number of words to be plotted. least frequent terms dropped
+# value returned by the function : a list(tdm, freqTable)
+rquery.wordcloud <- function(x, type=c("text", "url", "file"), 
+                             lang="english", excludeWords=NULL, 
+                             textStemming=FALSE,  colorPalette="Dark2",
+                             min.freq=3, max.words=200)
+{ 
+  library("tm")
+  library("SnowballC")
+  library("wordcloud")
+  library("RColorBrewer") 
+  
+  if(type[1]=="file") text <- readLines(x)
+  else if(type[1]=="url") text <- html_to_text(x)
+  else if(type[1]=="text") text <- x
+  
+  # Load the text as a corpus
+  docs <- Corpus(VectorSource(text))
+  # Convert the text to lower case
+  docs <- tm_map(docs, content_transformer(tolower))
+  # Remove numbers
+  docs <- tm_map(docs, removeNumbers)
+  # Remove stopwords for the language 
+  docs <- tm_map(docs, removeWords, stopwords(lang))
+  # Remove punctuations
+  docs <- tm_map(docs, removePunctuation)
+  # Eliminate extra white spaces
+  docs <- tm_map(docs, stripWhitespace)
+  # Remove your own stopwords
+  if(!is.null(excludeWords)) 
+    docs <- tm_map(docs, removeWords, excludeWords) 
+  # Text stemming
+  if(textStemming) docs <- tm_map(docs, stemDocument)
+  # Create term-document matrix
+  tdm <- TermDocumentMatrix(docs)
+  m <- as.matrix(tdm)
+  v <- sort(rowSums(m),decreasing=TRUE)
+  d <- data.frame(word = names(v),freq=v)
+  # check the color palette name 
+  if(!colorPalette %in% rownames(brewer.pal.info)) colors = colorPalette
+  else colors = brewer.pal(8, colorPalette) 
+  # Plot the word cloud
+  set.seed(1234)
+  wordcloud(d$word,d$freq, min.freq=min.freq, max.words=max.words,
+            random.order=FALSE, rot.per=0.35, 
+            use.r.layout=FALSE, colors=colors)
+  
+  invisible(list(tdm=tdm, freqTable = d))
+}
+#++++++++++++++++++++++
+# Helper function
+#++++++++++++++++++++++
+# Download and parse webpage
+html_to_text<-function(url){
+  library(RCurl)
+  library(XML)
+  # download html
+  html.doc <- getURL(url)  
+  #convert to plain text
+  doc = htmlParse(html.doc, asText=TRUE)
+  # "//text()" returns all text outside of HTML tags.
+  # We also don’t want text such as style and script codes
+  text <- xpathSApply(doc, "//text()[not(ancestor::script)][not(ancestor::style)][not(ancestor::noscript)][not(ancestor::form)]", xmlValue)
+  # Format text vector into one character string
+  return(paste(text, collapse = " "))
+}
+
 
 # categories for day hours
 day_bins <- data.frame("publish_hour" = 0:23, 
@@ -87,10 +169,7 @@ day_bins <- data.frame("publish_hour" = 0:23,
                                            "lunch", "lunch", 
                                            "afternoon work", "afternoon work", "afternoon work", "afternoon work",
                                            "2 hrs after work", "2 hrs after work"))
-                         
-                         
-                         
-
+               
 
 # read in tweet data files and combine
 tweet_list <- list() 
@@ -111,7 +190,7 @@ for (k in 1:length(listcsv)){
 
    
   #control how many tweets you work with
-  tweets_sub <- tweets_df #[1:100,]
+  tweets_sub <- tweets_df #[1:1000,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
@@ -119,7 +198,9 @@ for (k in 1:length(listcsv)){
   
     
   # get sentiment and create columns in tweet data set
-  tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content)
+  
+  #comment out this line for faster performance without sentiment analysis
+  #tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
   tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
   tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
   tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
@@ -141,7 +222,7 @@ for (k in 1:length(listcsv)){
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
 
-# *********************** LDA against full tweets **********************
+# ****************** This block performs LDA against full tweets ~7 hrs  *******************
 
 # create a document term matrix to clean
 #tweetCorpus <- Corpus(VectorSource(tweets$content)) 
@@ -177,8 +258,8 @@ tweets <- bind_rows(tweet_list) #combine all the tweet file data
 #  **************************** Start LDA against subset tweets ****************
 
 tweet_sub_df <- dplyr::select(tweets, content, publish_date, account_type) %>%
-  filter(publish_date >= "2016-10-05" & publish_date <= "2016-10-08" & 
-           account_type == "left" )
+  filter(publish_date >= "2017-07-15" & publish_date <= "2017-08-16" & 
+           account_type == "Right" )
 
 
 tweetSubCorpus <- Corpus(VectorSource(tweet_sub_df$content)) 
@@ -187,14 +268,13 @@ tweetSubDTM <- DocumentTermMatrix(tweetSubCorpus)
 # convert the document term matrix to a tidytext corpus
 tweetSubDTM_tidy <- tidy(tweetSubDTM)
 
-# I'm going to add my own custom stop words that I don't think will be
-# very informative in hotel reviews
+# Add custom stop words
 custom_stop_words <- tibble(word = c("https", "http", "amp"))
 
 # remove stopwords
 tweetSubDTM_tidy_cleaned <- tweetSubDTM_tidy %>% # take our tidy dtm and...
   anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
-  anti_join(custom_stop_words, by = c("term" = "word")) # remove my custom stopwords
+  anti_join(custom_stop_words, by = c("term" = "word")) # remove custom stopwords
 
 # reconstruct cleaned documents (so that each word shows up the correct number of times)
 tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
@@ -210,10 +290,22 @@ tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
 
 top_terms_by_topic_LDA(tweetSub_cleaned_documents$terms, number_of_topics = 2)
 
-
 # ************************* End LDA against subset tweets ***************************
 
-# total author sentiment 
+
+# *** code to produce a word cloud - however, will run out of memory around 100K tweets ***
+
+df <- tryCatch(rquery.wordcloud(tweet_sub_df$content, type=c("text", "url", "file"), 
+                 lang="english", excludeWords = NULL, 
+                 textStemming = FALSE,  colorPalette="Dark2",
+                 max.words=200))
+if("try-error" %in% class(df)) print(paste("error producing word cloud", geterrmessage(), ": "))
+
+# *********************************** end word cloud **********************************8
+
+
+
+# total author sentiment data frame for plotting purposes
 author_sentiment <- dplyr::select(tweets, author, account_type, anger,
                            anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, positive) %>% 
@@ -231,12 +323,10 @@ author_sentiment <- dplyr::select(tweets, author, account_type, anger,
     positive = sum(positive, na.rm = TRUE), 
     tweet_count = n()
   )
-#View(author_sentiment)
 
 
-#sentiment over time
 
-
+# sentiment over time data frame for plotting purposes
 sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_type,
                            anger, anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, 
@@ -257,14 +347,19 @@ sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_
     positive = sum(positive, na.rm = TRUE), 
     tweet_count = n()
   )
-  
+
+# publish data by hour for plotting purposes
+publish_hour <- dplyr::select(tweets, publish_hour, publish_date, account_type) %>%
+  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) 
 
 
+# plot sentiment over time
 ggplot(data = sentiment_over_time) + 
   geom_line(mapping = aes(x = publish_day, y = positive, color="Positive")) +
   geom_line(mapping = aes(x = publish_day, y = negative, color="Negative")) + 
 facet_wrap(~account_type, nrow = 2)
 
+# plot emotion over time
 ggplot(data = sentiment_over_time) + 
   geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) +
   geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
@@ -276,19 +371,17 @@ ggplot(data = sentiment_over_time) +
   geom_line(mapping = aes(x = publish_day, y = trust, color="Trust")) + 
 facet_wrap(~account_type, nrow = 2)
 
-
-publish_hour <- dplyr::select(tweets, publish_hour, publish_date, account_type) %>%
-  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) 
-  
+# plot tweets by publish hour
 ggplot(data = publish_hour) + 
   geom_bar(mapping = aes(x = publish_hour)) + 
 facet_wrap(~account_type, nrow = 2)
 
-
+# plot positive sentiment over time
 dplyr::select(tweets, time_category, positive) %>%
   group_by(time_category) %>%
   summarise(pos_sentiment  = sum(positive, na.rm = TRUE)) %>%
 ggplot(aes(x = time_category, y = pos_sentiment)) + 
   geom_bar(stat = "identity")
+
 
 
