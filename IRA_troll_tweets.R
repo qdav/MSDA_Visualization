@@ -169,7 +169,13 @@ day_bins <- data.frame("publish_hour" = 0:23,
                                            "lunch", "lunch", 
                                            "afternoon work", "afternoon work", "afternoon work", "afternoon work",
                                            "2 hrs after work", "2 hrs after work"))
-               
+
+time_category_levels <- c(
+  "2 hrs before work", "morning work", "lunch", "afternoon work", 
+  "2 hrs after work", "evening leisure", "sleep")
+
+  
+     
 
 # read in tweet data files and combine
 tweet_list <- list() 
@@ -190,7 +196,7 @@ for (k in 1:length(listcsv)){
 
    
   #control how many tweets you work with
-  tweets_sub <- tweets_df #[1:1000,]
+  tweets_sub <- tweets_df[1:1000,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
@@ -200,7 +206,7 @@ for (k in 1:length(listcsv)){
   # get sentiment and create columns in tweet data set
   
   #comment out this line for faster performance without sentiment analysis
-  #tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
+  tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
   tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
   tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
   tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
@@ -376,12 +382,40 @@ ggplot(data = publish_hour) +
   geom_bar(mapping = aes(x = publish_hour)) + 
 facet_wrap(~account_type, nrow = 2)
 
-# plot positive sentiment over time
-dplyr::select(tweets, time_category, positive) %>%
+
+# plot changes in emotion over time of day
+sent_by_time_day <- dplyr::select(tweets, time_category, positive, negative,
+              anger, anticipation, disgust, fear, joy, 
+              sadness, surprise, trust) %>%
   group_by(time_category) %>%
-  summarise(pos_sentiment  = sum(positive, na.rm = TRUE)) %>%
-ggplot(aes(x = time_category, y = pos_sentiment)) + 
-  geom_bar(stat = "identity")
+  summarise(pos_sentiment  = sum(positive, na.rm = TRUE),
+            neg_sentiment = sum(negative, na.rm = TRUE),
+            anger = sum(anger, na.rm = TRUE),
+            anticipation = sum(anticipation, na.rm = TRUE),
+            disgust = sum(disgust, na.rm = TRUE),
+            fear = sum(fear, na.rm = TRUE),
+            joy = sum(joy, na.rm = TRUE),
+            sadness = sum(sadness, na.rm = TRUE),
+            surprise = sum(surprise, na.rm = TRUE),
+            trust = sum(trust, na.rm = TRUE),
+            tweet_count = n()) %>%
+mutate(
+       time_category = factor(time_category, levels = time_category_levels),
+       avg_pos_sentiment  = pos_sentiment / tweet_count,
+       avg_neg_sentiment = neg_sentiment / tweet_count,
+       avg_anger = anger / tweet_count,
+       avg_anticipation = anticipation / tweet_count,
+       avg_disgust = disgust / tweet_count,
+       avg_fear = fear / tweet_count,
+       avg_joy = joy / tweet_count,
+       avg_sadness = sadness / tweet_count,
+       avg_surprise = surprise / tweet_count,
+       avg_trust = trust / tweet_count) %>%
+gather(avg_anger,avg_anticipation, avg_disgust, avg_fear, 
+       avg_joy, avg_sadness, avg_surprise, avg_trust, 
+       key = "emotion", value = "avg_value") %>%
+select(time_category, emotion, avg_value)
 
-
+ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=emotion, color=emotion)) + 
+  geom_line()
 
