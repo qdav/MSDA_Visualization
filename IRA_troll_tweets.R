@@ -54,12 +54,20 @@ top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataf
   lda <- LDA(DTM, k = number_of_topics, control = list(seed = 1234))
   topics <- tidy(lda, matrix = "beta")
   
+  # adding code to remove numeric-only values
+  numeric_terms <- dplyr::select(topics, term) %>%
+    subset(grepl('^\\d+$', topics$term))
+  
+  topics <- topics %>%
+    anti_join(numeric_terms, by = c("term" = "term"))  
+  
   # get the top ten terms for each topic
   top_terms <- topics  %>% # take the topics data frame and..
     group_by(topic) %>% # treat each topic as a different group
     top_n(10, beta) %>% # get the top 10 most informative words
     ungroup() %>% # ungroup
     arrange(topic, -beta) # arrange words in descending informativeness
+  
   
   # if the user asks for a plot (TRUE by default)
   if(plot == T){
@@ -193,10 +201,10 @@ for (k in 1:length(listcsv)){
   tweets_df$harvested_date<-mdy_hm(tweets_df$harvested_date)
   tweets_df$weekdays<-weekdays(tweets_df$publish_date)
   tweets_df$weekdays <- factor(tweets_df$weekdays, levels = rev(c("Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday")))
-
+ 
    
   #control how many tweets you work with
-  tweets_sub <- tweets_df[1:1000,]
+  tweets_sub <- tweets_df #[1:1000,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
@@ -205,8 +213,8 @@ for (k in 1:length(listcsv)){
     
   # get sentiment and create columns in tweet data set
   
-  #comment out this line for faster performance without sentiment analysis
-  tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
+  #comment out these lines for faster performance without sentiment analysis
+  #tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
   tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
   tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
   tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
@@ -236,7 +244,7 @@ tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
 # convert the document term matrix to a tidytext corpus
 #tweetDTM_tidy <- tidy(tweetDTM)
-
+ 
 # I'm going to add my own custom stop words that I don't think will be
 # very informative in hotel reviews
 #custom_stop_words <- tibble(word = c("https", "http", "amp"))
@@ -263,9 +271,9 @@ tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
 #  **************************** Start LDA against subset tweets ****************
 
-tweet_sub_df <- dplyr::select(tweets, content, publish_date, account_type) %>%
-  filter(publish_date >= "2017-07-15" & publish_date <= "2017-08-16" & 
-           account_type == "Right" )
+tweet_sub_df <- dplyr::select(tweets, content, publish_date, account_type, time_category) %>%
+  filter(publish_date >= "2014-01-01" & publish_date <= "2018-01-01" & 
+           account_type == "left" & time_category == "2 hrs before work" )
 
 
 tweetSubCorpus <- Corpus(VectorSource(tweet_sub_df$content)) 
@@ -294,18 +302,18 @@ tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
 #head(cleaned_documents)
 
 
-top_terms_by_topic_LDA(tweetSub_cleaned_documents$terms, number_of_topics = 2)
+#top_terms_by_topic_LDA(tweetSub_cleaned_documents$terms, number_of_topics = 4)
 
 # ************************* End LDA against subset tweets ***************************
 
 
 # *** code to produce a word cloud - however, will run out of memory around 100K tweets ***
 
-df <- tryCatch(rquery.wordcloud(tweet_sub_df$content, type=c("text", "url", "file"), 
-                 lang="english", excludeWords = NULL, 
-                 textStemming = FALSE,  colorPalette="Dark2",
-                 max.words=200))
-if("try-error" %in% class(df)) print(paste("error producing word cloud", geterrmessage(), ": "))
+#df <- tryCatch(rquery.wordcloud(tweet_sub_df$content, type=c("text", "url", "file"), 
+#                 lang="english", excludeWords = NULL, 
+#                 textStemming = FALSE,  colorPalette="Dark2",
+#                 max.words=200))
+#if("try-error" %in% class(df)) print(paste("error producing word cloud", geterrmessage(), ": "))
 
 # *********************************** end word cloud **********************************8
 
@@ -337,7 +345,7 @@ sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_
                            anger, anticipation, disgust, fear, joy, 
                            sadness, surprise, trust, negative, 
                            positive, time_category ) %>%
-  filter(publish_date >= "2015-07-20" & publish_date <= "2015-07-24" &
+  filter(publish_date >= "2014-01-01" & publish_date <= "2015-01-01" &
                          account_type %in% c("Right")) %>%
   group_by(publish_day, account_type) %>% 
   summarise(
@@ -414,8 +422,71 @@ mutate(
 gather(avg_anger,avg_anticipation, avg_disgust, avg_fear, 
        avg_joy, avg_sadness, avg_surprise, avg_trust, 
        key = "emotion", value = "avg_value") %>%
-select(time_category, emotion, avg_value)
+dplyr::select(time_category, emotion, avg_value)
 
 ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=emotion, color=emotion)) + 
   geom_line()
+
+# How many tweets per time_category and account type are there
+time_and_type_df <-dplyr::select(tweets, time_category, account_type) %>%
+      filter(account_type %in% c("Right", "left"))  %>%
+      group_by(time_category, account_type) %>%
+      summarise(tweet_count = n())
+      
+
+
+time_type_list <- list() 
+
+for (row in 1:nrow(time_and_type_df)){
+    time_category_int <- as.integer(time_and_type_df[row, "time_category"])
+    account_type_txt <- as.character(time_and_type_df[row, "account_type"])
+    tweet_count <- time_and_type_df[row, "tweet_count"]
+
+    print(paste("starting LDA for account type", account_type_txt, "and time category", time_category_int, Sys.time(), "" ))
+
+    time_acct_df <-dplyr::select(tweets, time_category, account_type, content) %>%
+      filter(as.integer(time_category) == time_category_int & account_type == account_type_txt)
+    
+    # clean tweets
+    time_type_Corpus <- Corpus(VectorSource(time_acct_df$content)) 
+    time_type_DTM <- DocumentTermMatrix(time_type_Corpus)
+    
+    # convert the document term matrix to a tidytext corpus
+    time_type_DTM_tidy <- tidy(time_type_DTM)
+    
+    # Add custom stop words
+    custom_stop_words <- tibble(word = c("https", "http", "amp"))
+    
+    # remove stopwords
+    time_type_DTM_tidy_cleaned <- time_type_DTM_tidy %>% # take our tidy dtm and...
+      anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
+      anti_join(custom_stop_words, by = c("term" = "word")) # remove custom stopwords
+    
+    #numeric_terms <- dplyr::select(time_type_DTM_tidy_cleaned, term) %>%
+    #  subset(grepl('^\\d+$', time_type_DTM_tidy_cleaned$term))
+    
+    #time_type_DTM_tidy_cleaned <- time_type_DTM_tidy_cleaned %>%
+    #  anti_join(numeric_terms)
+    
+    # reconstruct cleaned documents (so that each word shows up the correct number of times)
+    time_type_cleaned_documents <- time_type_DTM_tidy_cleaned %>%
+      group_by(document) %>% 
+      mutate(terms = toString(rep(term, count))) %>%
+      dplyr::select(document, terms) %>%
+      unique()    
+    
+    
+    lda_df <- top_terms_by_topic_LDA(time_type_cleaned_documents, plot = F, number_of_topics = 4)
+    lda_df$time_category = as.character(time_category_int)
+    lda_df$account_category = account_type_txt
+    lda_df$tweet_count = as.integer(tweet_count)
+    
+    time_type_list[[row]] <- lda_df
+
+    print(paste("ending LDA for account type", account_type_txt, "and time category", time_category_int, Sys.time(), "" ))
+    
+}
+
+day_time_tweets <- bind_rows(time_type_list) #combine all the tweet file data
+View(day_time_tweets)
 
