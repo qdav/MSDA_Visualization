@@ -177,7 +177,7 @@ day_bins <- data.frame("publish_hour" = 0:23,
                                            "lunch", "lunch", 
                                            "afternoon work", "afternoon work", "afternoon work", "afternoon work",
                                            "2 hrs after work", "2 hrs after work"))
-
+# factor ordering
 time_category_levels <- c(
   "2 hrs before work", "morning work", "lunch", "afternoon work", 
   "2 hrs after work", "evening leisure", "sleep")
@@ -214,7 +214,7 @@ for (k in 1:length(listcsv)){
   # get sentiment and create columns in tweet data set
   
   #comment out these lines for faster performance without sentiment analysis
-  #tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
+  tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
   tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
   tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
   tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
@@ -236,66 +236,33 @@ for (k in 1:length(listcsv)){
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
 
-# ****************** This block performs LDA against full tweets ~7 hrs  *******************
+#  **************************** Start LDA against subset tweets ****************
 
-# create a document term matrix to clean
-#tweetCorpus <- Corpus(VectorSource(tweets$content)) 
-#tweetDTM <- DocumentTermMatrix(tweetCorpus)
+#tweet_sub_df <- dplyr::select(tweets, content, publish_date, account_type, time_category) %>%
+#  filter(publish_date >= "2014-01-01" & publish_date <= "2018-01-01" & 
+#           account_type == "left" & time_category == "2 hrs before work" )
+
+
+#tweetSubCorpus <- Corpus(VectorSource(tweet_sub_df$content)) 
+#tweetSubDTM <- DocumentTermMatrix(tweetSubCorpus)
 
 # convert the document term matrix to a tidytext corpus
-#tweetDTM_tidy <- tidy(tweetDTM)
- 
-# I'm going to add my own custom stop words that I don't think will be
-# very informative in hotel reviews
+#tweetSubDTM_tidy <- tidy(tweetSubDTM)
+
+# Add custom stop words
 #custom_stop_words <- tibble(word = c("https", "http", "amp"))
 
 # remove stopwords
-#tweetDTM_tidy_cleaned <- tweetDTM_tidy %>% # take our tidy dtm and...
+#tweetSubDTM_tidy_cleaned <- tweetSubDTM_tidy %>% # take our tidy dtm and...
 #  anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
-#  anti_join(custom_stop_words, by = c("term" = "word")) # remove my custom stopwords
+#  anti_join(custom_stop_words, by = c("term" = "word")) # remove custom stopwords
 
 # reconstruct cleaned documents (so that each word shows up the correct number of times)
-#cleaned_documents <- tweetDTM_tidy_cleaned %>%
+#tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
 #  group_by(document) %>% 
 #  mutate(terms = toString(rep(term, count))) %>%
 #  dplyr::select(document, terms) %>%
 #  unique()
-
-# check out what the cleaned documents look like (should just be a bunch of content words)
-# in alphabetic order
-#head(cleaned_documents)
-
-#top_terms_by_topic_LDA(cleaned_documents$terms, number_of_topics = 4)
-
-# ***************************** End LDA against full tweets  ******************
-
-#  **************************** Start LDA against subset tweets ****************
-
-tweet_sub_df <- dplyr::select(tweets, content, publish_date, account_type, time_category) %>%
-  filter(publish_date >= "2014-01-01" & publish_date <= "2018-01-01" & 
-           account_type == "left" & time_category == "2 hrs before work" )
-
-
-tweetSubCorpus <- Corpus(VectorSource(tweet_sub_df$content)) 
-tweetSubDTM <- DocumentTermMatrix(tweetSubCorpus)
-
-# convert the document term matrix to a tidytext corpus
-tweetSubDTM_tidy <- tidy(tweetSubDTM)
-
-# Add custom stop words
-custom_stop_words <- tibble(word = c("https", "http", "amp"))
-
-# remove stopwords
-tweetSubDTM_tidy_cleaned <- tweetSubDTM_tidy %>% # take our tidy dtm and...
-  anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
-  anti_join(custom_stop_words, by = c("term" = "word")) # remove custom stopwords
-
-# reconstruct cleaned documents (so that each word shows up the correct number of times)
-tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
-  group_by(document) %>% 
-  mutate(terms = toString(rep(term, count))) %>%
-  dplyr::select(document, terms) %>%
-  unique()
 
 # check out what the cleaned documents look like (should just be a bunch of content words)
 # in alphabetic order
@@ -307,7 +274,7 @@ tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
 # ************************* End LDA against subset tweets ***************************
 
 
-# *** code to produce a word cloud - however, will run out of memory around 100K tweets ***
+# ************* start word cloud will run out of memory around 100K tweets *********
 
 #df <- tryCatch(rquery.wordcloud(tweet_sub_df$content, type=c("text", "url", "file"), 
 #                 lang="english", excludeWords = NULL, 
@@ -315,7 +282,7 @@ tweetSub_cleaned_documents <- tweetSubDTM_tidy_cleaned %>%
 #                 max.words=200))
 #if("try-error" %in% class(df)) print(paste("error producing word cloud", geterrmessage(), ": "))
 
-# *********************************** end word cloud **********************************8
+# *********************************** end word cloud **********************************
 
 
 
@@ -438,14 +405,14 @@ time_and_type_df <-dplyr::select(tweets, time_category, account_type) %>%
 time_type_list <- list() 
 
 for (row in 1:nrow(time_and_type_df)){
-    time_category_int <- as.integer(time_and_type_df[row, "time_category"])
+    time_category_txt <- as.character(time_and_type_df[row, "time_category"]$time_category)
     account_type_txt <- as.character(time_and_type_df[row, "account_type"])
     tweet_count <- time_and_type_df[row, "tweet_count"]
 
-    print(paste("starting LDA for account type", account_type_txt, "and time category", time_category_int, Sys.time(), "" ))
+    print(paste("starting LDA for account type", account_type_txt, "and time category", time_category_txt, Sys.time(), "" ))
 
     time_acct_df <-dplyr::select(tweets, time_category, account_type, content) %>%
-      filter(as.integer(time_category) == time_category_int & account_type == account_type_txt)
+      filter(time_category == time_category_txt & account_type == account_type_txt)
     
     # clean tweets
     time_type_Corpus <- Corpus(VectorSource(time_acct_df$content)) 
@@ -455,7 +422,7 @@ for (row in 1:nrow(time_and_type_df)){
     time_type_DTM_tidy <- tidy(time_type_DTM)
     
     # Add custom stop words
-    custom_stop_words <- tibble(word = c("https", "http", "amp"))
+    custom_stop_words <- tibble(word = c("https", "http", "amp", "231s", "231t"))
     
     # remove stopwords
     time_type_DTM_tidy_cleaned <- time_type_DTM_tidy %>% # take our tidy dtm and...
@@ -477,16 +444,17 @@ for (row in 1:nrow(time_and_type_df)){
     
     
     lda_df <- top_terms_by_topic_LDA(time_type_cleaned_documents, plot = F, number_of_topics = 4)
-    lda_df$time_category = as.character(time_category_int)
+    lda_df$time_category = time_category_txt
     lda_df$account_category = account_type_txt
     lda_df$tweet_count = as.integer(tweet_count)
     
     time_type_list[[row]] <- lda_df
 
-    print(paste("ending LDA for account type", account_type_txt, "and time category", time_category_int, Sys.time(), "" ))
+    print(paste("ending LDA for account type", account_type_txt, "and time category", time_category_txt, Sys.time(), "" ))
     
 }
 
-day_time_tweets <- bind_rows(time_type_list) #combine all the tweet file data
+day_time_tweets <- bind_rows(time_type_list) #combine all the topic value df's
 View(day_time_tweets)
-
+tweets_out <- day_time_tweets #[1:100000,]
+write.csv(tweets_out, file="topics_time_category.csv")
