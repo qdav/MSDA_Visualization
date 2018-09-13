@@ -396,7 +396,7 @@ ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=emot
 
 # How many tweets per time_category and account type are there
 time_and_type_df <-dplyr::select(tweets, time_category, account_type) %>%
-      filter(account_type %in% c("Right", "left"))  %>%
+      filter(account_type %in% c("Right", "left", "Hashtager", "news", "local"))  %>%
       group_by(time_category, account_type) %>%
       summarise(tweet_count = n())
       
@@ -456,5 +456,5 @@ for (row in 1:nrow(time_and_type_df)){
 
 day_time_tweets <- bind_rows(time_type_list) #combine all the topic value df's
 View(day_time_tweets)
-tweets_out <- day_time_tweets #[1:100000,]
+tweets_out <- day_time_tweets
 write.csv(tweets_out, file="topics_time_category.csv")
