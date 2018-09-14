@@ -1,0 +1,58 @@
+---
+title: "Quinn_McIntire_DA_6233_25B_HW2"
+author: "Quinn McIntire"
+date: "September 12, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(MASS)
+library(pastecs)
+```
+
+
+```{r}
+# Create a smaller data frame from presidential where start date is larger than
+# the smallest date in economics
+
+pres2 <- subset(presidential, start > economics$date[1])
+
+ggplot(data = economics) +
+  geom_rect(aes(xmin = , xmax = , fill = ),
+    data = pres2,
+    ymin = , ymax = , alpha = 
+  ) +
+  scale_fill_manual() +
+  geom_vline(aes(xintercept = ),
+    data = pres2,
+    colour = , alpha = 
+  ) +
+  geom_text(aes(
+    x = ,
+    y = , label = , family = 
+  ),
+  data = pres2,
+  vjust = 0.5, 
+  angle = 
+  ) +
+  geom_line() +
+  labs() +
+  scale_x_date(breaks = , labels = scales::) +
+  theme(
+    panel.grid = ,
+    panel.background = ,
+    axis.line = ,
+    axis.text.x = 
+  )
+```
+
+
+
+```{r pressure, echo=FALSE}
+
+```
+
