@@ -383,41 +383,6 @@ ggplot(data = publish_hour) +
 facet_wrap(~account_type, nrow = 2)
 
 
-# plot changes in emotion over time of day
-sent_by_time_day <- dplyr::select(tweets, time_category, positive, negative,
-              anger, anticipation, disgust, fear, joy, 
-              sadness, surprise, trust) %>%
-  group_by(time_category) %>%
-  summarise(pos_sentiment  = sum(positive, na.rm = TRUE),
-            neg_sentiment = sum(negative, na.rm = TRUE),
-            anger = sum(anger, na.rm = TRUE),
-            anticipation = sum(anticipation, na.rm = TRUE),
-            disgust = sum(disgust, na.rm = TRUE),
-            fear = sum(fear, na.rm = TRUE),
-            joy = sum(joy, na.rm = TRUE),
-            sadness = sum(sadness, na.rm = TRUE),
-            surprise = sum(surprise, na.rm = TRUE),
-            trust = sum(trust, na.rm = TRUE),
-            tweet_count = n()) %>%
-mutate(
-       time_category = factor(time_category, levels = time_category_levels),
-       avg_pos_sentiment  = pos_sentiment / tweet_count,
-       avg_neg_sentiment = neg_sentiment / tweet_count,
-       avg_anger = anger / tweet_count,
-       avg_anticipation = anticipation / tweet_count,
-       avg_disgust = disgust / tweet_count,
-       avg_fear = fear / tweet_count,
-       avg_joy = joy / tweet_count,
-       avg_sadness = sadness / tweet_count,
-       avg_surprise = surprise / tweet_count,
-       avg_trust = trust / tweet_count) %>%
-gather(avg_anger,avg_anticipation, avg_disgust, avg_fear, 
-       avg_joy, avg_sadness, avg_surprise, avg_trust, 
-       key = "emotion", value = "avg_value") %>%
-dplyr::select(time_category, emotion, avg_value)
-
-ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=emotion, color=emotion)) + 
-  geom_line()
 
 
 
@@ -461,3 +426,44 @@ keyword_tweets <- bind_rows(topic_tweets_list) #combine all the topic value df's
 
 write.csv(keyword_tweets, file="topic_tweets_w_sentiment.csv")
 
+# plot changes in emotion over time of day
+sent_by_time_day <- dplyr::select(keyword_tweets, time_category, positive, negative,
+                                  anger, anticipation, disgust, fear, joy, 
+                                  sadness, surprise, trust) %>%
+  group_by(time_category) %>%
+  summarise(pos_sentiment  = sum(positive, na.rm = TRUE),
+            neg_sentiment = sum(negative, na.rm = TRUE),
+            anger = sum(anger, na.rm = TRUE),
+            anticipation = sum(anticipation, na.rm = TRUE),
+            disgust = sum(disgust, na.rm = TRUE),
+            fear = sum(fear, na.rm = TRUE),
+            joy = sum(joy, na.rm = TRUE),
+            sadness = sum(sadness, na.rm = TRUE),
+            surprise = sum(surprise, na.rm = TRUE),
+            trust = sum(trust, na.rm = TRUE),
+            tweet_count = n()) %>%
+  mutate(
+    time_category = factor(time_category, levels = time_category_levels),
+    avg_pos_sentiment  = pos_sentiment / tweet_count,
+    avg_neg_sentiment = neg_sentiment / tweet_count #,
+    #avg_anger = anger / tweet_count,
+    #avg_anticipation = anticipation / tweet_count,
+    #avg_disgust = disgust / tweet_count,
+    #avg_fear = fear / tweet_count,
+    #avg_joy = joy / tweet_count,
+    #avg_sadness = sadness / tweet_count,
+    #avg_surprise = surprise / tweet_count,
+    #avg_trust = trust / tweet_count)
+    )     %>%
+  gather(
+    avg_pos_sentiment, avg_neg_sentiment,
+    
+     # avg_anger,avg_anticipation, avg_disgust, avg_fear, 
+     # avg_joy, avg_sadness, avg_surprise, avg_trust, 
+         key = "sentiment", value = "avg_value") %>%
+  dplyr::select(time_category, sentiment, avg_value)
+
+ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=sentiment, color=sentiment)) + 
+  geom_line(size = 2) + 
+  labs(x = "Time of Day (CDT)", y = "Average Sentiment") + 
+  theme_bw() 
