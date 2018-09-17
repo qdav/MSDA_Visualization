@@ -43,7 +43,6 @@ top_terms_by_topic_LDA <- function(input_text, # should be a columm from a dataf
                                    number_of_topics = 4) # number of topics (4 by default)
 {    
 
-
   # create a corpus (type of object expected by tm) and document term matrix
   Corpus <- Corpus(VectorSource(input_text)) # make a corpus object
   DTM <- DocumentTermMatrix(Corpus) # get the count of words/document
@@ -108,9 +107,11 @@ clean_text_for_LDA <- function(input_text)
     anti_join(stop_words, by = c("term" = "word")) %>% # remove English stopwords and...
     anti_join(custom_stop_words, by = c("term" = "word")) # remove custom stopwords
   
+  # find numeric-only terms
   numeric_terms <- dplyr::select(time_type_DTM_tidy_cleaned, term) %>%
     subset(grepl('^\\d+$', time_type_DTM_tidy_cleaned$term))
   
+  # remove numeric-only terms
   time_type_DTM_tidy_cleaned <- time_type_DTM_tidy_cleaned %>%
     anti_join(numeric_terms, by = c("term" = "term"))
   
@@ -121,36 +122,37 @@ clean_text_for_LDA <- function(input_text)
     dplyr::select(document, terms) %>%
     unique() 
   
-  
 }
 
 get_tweets_w_topics <- function(topic_df_in, tweet_df_in) 
 { 
   
+  # find unique terms across topics
   topic_keywords <- dplyr::select(topic_df_in, term) %>%
     group_by(term) %>%
     unique()
   
+  # create comma-delimited list of terms for debugging purposes only
   topic_list <- paste(as.character(topic_keywords), collapse=", ")
   tweet_df_in$topic_list <- topic_list
   
+  # find all the tweets that match one or more unique topic terms
   topic_match_df <- as.data.frame(sapply(topic_keywords$term, grepl, tweet_df_in$content))
   topic_match_df <- tibble::rowid_to_column(topic_match_df, "ID")
   term_gathered_df <- gather(topic_match_df,  key = "term", value = "found", -one_of("ID"))
 
-  
-  
   index_to_keep_df <- dplyr::select(term_gathered_df, ID, term, found) %>%
     filter(found == TRUE) %>%
     group_by(ID) %>%
     summarize(count = n()) %>%
     select(ID)
     
-  # return the tweets that have one or more topic words
+  # return the tweets that have one or more topic terms
   tweet_df_in[index_to_keep_df$ID, ]
   
-  
 }
+
+
 #++++++++++++++++++++++++++++++++++
 # rquery.wordcloud() : Word cloud generator
 # - http://www.sthda.com
@@ -240,15 +242,14 @@ day_bins <- data.frame("publish_hour" = 0:23,
                                            "lunch", "lunch", 
                                            "afternoon work", "afternoon work", "afternoon work", "afternoon work",
                                            "2 hrs after work", "2 hrs after work"))
+
 # factor ordering
 time_category_levels <- c(
   "2 hrs before work", "morning work", "lunch", "afternoon work", 
   "2 hrs after work", "evening leisure", "sleep")
 
-  
-     
 
-# read in tweet data files and combine
+# *************************** begin loop through tweet files *******************************
 tweet_list <- list() 
 listcsv <- dir(pattern = "IRAhandle_tweets_.") 
 for (k in 1:length(listcsv)){
@@ -266,8 +267,8 @@ for (k in 1:length(listcsv)){
   tweets_df$weekdays <- factor(tweets_df$weekdays, levels = rev(c("Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday")))
  
    
-  #control how many tweets you work with
-  tweets_sub <- tweets_df #[1:100,]
+  # uncomment the row brackets to control how many tweets per file you work with
+  tweets_sub <- tweets_df [1:100,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
@@ -276,8 +277,9 @@ for (k in 1:length(listcsv)){
     
   # get sentiment and create columns in tweet data set
   
-  #comment out these lines for faster performance without sentiment analysis
+  #comment out this line for faster performance without sentiment analysis
   tweets_sub$nrc_sentiment <- get_nrc_sentiment(tweets_sub$content) 
+  
   tweets_sub$anger <- tweets_sub$nrc_sentiment$anger
   tweets_sub$anticipation <- tweets_sub$nrc_sentiment$anticipation
   tweets_sub$disgust <- tweets_sub$nrc_sentiment$disgust
@@ -298,93 +300,7 @@ for (k in 1:length(listcsv)){
 
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
-
-# ************* start word cloud will run out of memory around 100K tweets *********
-
-#df <- tryCatch(rquery.wordcloud(tweet_sub_df$content, type=c("text", "url", "file"), 
-#                 lang="english", excludeWords = NULL, 
-#                 textStemming = FALSE,  colorPalette="Dark2",
-#                 max.words=200))
-#if("try-error" %in% class(df)) print(paste("error producing word cloud", geterrmessage(), ": "))
-
-# *********************************** end word cloud **********************************
-
-
-
-# total author sentiment data frame for plotting purposes
-author_sentiment <- dplyr::select(tweets, author, account_type, anger,
-                           anticipation, disgust, fear, joy, 
-                           sadness, surprise, trust, negative, positive) %>% 
-    group_by(author, account_type) %>% 
-  summarise(
-    anger = sum(anger, na.rm = TRUE),
-    anticipation = sum(anticipation, na.rm = TRUE),
-    disgust = sum(disgust, na.rm = TRUE),
-    fear = sum(fear, na.rm = TRUE),
-    joy = sum(joy, na.rm = TRUE),
-    sadness = sum(sadness, na.rm = TRUE),
-    surprise = sum(surprise, na.rm = TRUE),
-    trust = sum(trust, na.rm = TRUE),
-    negative = sum(negative, na.rm = TRUE),
-    positive = sum(positive, na.rm = TRUE), 
-    tweet_count = n()
-  )
-
-
-
-# sentiment over time data frame for plotting purposes
-sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_type,
-                           anger, anticipation, disgust, fear, joy, 
-                           sadness, surprise, trust, negative, 
-                           positive, time_category ) %>%
-  filter(publish_date >= "2014-01-01" & publish_date <= "2015-01-01" &
-                         account_type %in% c("Right")) %>%
-  group_by(publish_day, account_type) %>% 
-  summarise(
-    anger = sum(anger, na.rm = TRUE),
-    anticipation = sum(anticipation, na.rm = TRUE),
-    disgust = sum(disgust, na.rm = TRUE),
-    fear = sum(fear, na.rm = TRUE),
-    joy = sum(joy, na.rm = TRUE),
-    sadness = sum(sadness, na.rm = TRUE),
-    surprise = sum(surprise, na.rm = TRUE),
-    trust = sum(trust, na.rm = TRUE),
-    negative = sum(negative, na.rm = TRUE),
-    positive = sum(positive, na.rm = TRUE), 
-    tweet_count = n()
-  )
-
-# publish data by hour for plotting purposes
-publish_hour <- dplyr::select(tweets, publish_hour, publish_date, account_type) %>%
-  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) 
-
-
-# plot sentiment over time
-ggplot(data = sentiment_over_time) + 
-  geom_line(mapping = aes(x = publish_day, y = positive, color="Positive")) +
-  geom_line(mapping = aes(x = publish_day, y = negative, color="Negative")) + 
-facet_wrap(~account_type, nrow = 2)
-
-# plot emotion over time
-ggplot(data = sentiment_over_time) + 
-  geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) +
-  geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
-  geom_line(mapping = aes(x = publish_day, y = disgust, color="Disgust")) + 
-  geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
-  geom_line(mapping = aes(x = publish_day, y = joy, color="Joy")) + 
-  geom_line(mapping = aes(x = publish_day, y = sadness, color="Sadness")) + 
-  geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
-  geom_line(mapping = aes(x = publish_day, y = trust, color="Trust")) + 
-facet_wrap(~account_type, nrow = 2)
-
-# plot tweets by publish hour
-ggplot(data = publish_hour) + 
-  geom_bar(mapping = aes(x = publish_hour)) + 
-facet_wrap(~account_type, nrow = 2)
-
-
-
-
+# *************************** end loop through tweet files *******************************
 
 
 
@@ -395,8 +311,9 @@ time_and_type_df <-dplyr::select(tweets, time_category, account_type) %>%
       summarise(tweet_count = n())
       
 
-topic_tweets_list <- list() 
+topic_tweets_list <- list() # intialize list to hold data frames of tweets
 
+# loop through all the combinations of account type and time category
 for (row in 1:nrow(time_and_type_df)){
     time_category_txt <- as.character(time_and_type_df[row, "time_category"]$time_category)
     account_type_txt <- as.character(time_and_type_df[row, "account_type"])
@@ -421,10 +338,64 @@ for (row in 1:nrow(time_and_type_df)){
     
 }
 
-# holds time category, troll type, topics, and terms
-keyword_tweets <- bind_rows(topic_tweets_list) #combine all the topic value df's
+# holds all the tweets that match one or more LDA topic terms for a given troll/time cateogry
+keyword_tweets <- bind_rows(topic_tweets_list) 
 
+# optionall write out a file with all the filtered tweets (~600K, 350MB)
 write.csv(keyword_tweets, file="topic_tweets_w_sentiment.csv")
+
+
+
+# ***************************** start of plots *********************************************
+
+
+# total author sentiment data frame for plotting purposes
+author_sentiment <- dplyr::select(tweets, author, account_type, anger,
+                                  anticipation, disgust, fear, joy, 
+                                  sadness, surprise, trust, negative, positive) %>% 
+  group_by(author, account_type) %>% 
+  summarise(
+    anger = sum(anger, na.rm = TRUE),
+    anticipation = sum(anticipation, na.rm = TRUE),
+    disgust = sum(disgust, na.rm = TRUE),
+    fear = sum(fear, na.rm = TRUE),
+    joy = sum(joy, na.rm = TRUE),
+    sadness = sum(sadness, na.rm = TRUE),
+    surprise = sum(surprise, na.rm = TRUE),
+    trust = sum(trust, na.rm = TRUE),
+    negative = sum(negative, na.rm = TRUE),
+    positive = sum(positive, na.rm = TRUE), 
+    tweet_count = n()
+  )
+
+
+
+# sentiment over time data frame for plotting purposes
+sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_type,
+                                     anger, anticipation, disgust, fear, joy, 
+                                     sadness, surprise, trust, negative, 
+                                     positive, time_category ) %>%
+  filter(publish_date >= "2014-01-01" & publish_date <= "2015-01-01" &
+           account_type %in% c("Right")) %>%
+  group_by(publish_day, account_type) %>% 
+  summarise(
+    anger = sum(anger, na.rm = TRUE),
+    anticipation = sum(anticipation, na.rm = TRUE),
+    disgust = sum(disgust, na.rm = TRUE),
+    fear = sum(fear, na.rm = TRUE),
+    joy = sum(joy, na.rm = TRUE),
+    sadness = sum(sadness, na.rm = TRUE),
+    surprise = sum(surprise, na.rm = TRUE),
+    trust = sum(trust, na.rm = TRUE),
+    negative = sum(negative, na.rm = TRUE),
+    positive = sum(positive, na.rm = TRUE), 
+    tweet_count = n()
+  )
+
+# publish data by hour for plotting purposes
+publish_hour <- dplyr::select(tweets, publish_hour, publish_date, account_type) %>%
+  filter(., publish_date > "2015-01-01" & account_type %in% c("Right", "left")) 
+
 
 # plot changes in emotion over time of day
 sent_by_time_day <- dplyr::select(keyword_tweets, time_category, positive, negative,
@@ -467,3 +438,42 @@ ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=sent
   geom_line(size = 2) + 
   labs(x = "Time of Day (CDT)", y = "Average Sentiment") + 
   theme_bw() 
+
+
+# plot sentiment over time
+ggplot(data = sentiment_over_time) + 
+  geom_line(mapping = aes(x = publish_day, y = positive, color="Positive")) +
+  geom_line(mapping = aes(x = publish_day, y = negative, color="Negative")) + 
+  facet_wrap(~account_type, nrow = 2)
+
+# plot emotion over time
+ggplot(data = sentiment_over_time) + 
+  geom_line(mapping = aes(x = publish_day, y = anger, color="Anger")) +
+  geom_line(mapping = aes(x = publish_day, y = anticipation, color="Anticipation")) + 
+  geom_line(mapping = aes(x = publish_day, y = disgust, color="Disgust")) + 
+  geom_line(mapping = aes(x = publish_day, y = fear, color="Fear")) + 
+  geom_line(mapping = aes(x = publish_day, y = joy, color="Joy")) + 
+  geom_line(mapping = aes(x = publish_day, y = sadness, color="Sadness")) + 
+  geom_line(mapping = aes(x = publish_day, y = surprise, color="Surprise")) + 
+  geom_line(mapping = aes(x = publish_day, y = trust, color="Trust")) + 
+  facet_wrap(~account_type, nrow = 2)
+
+# plot tweets by publish hour
+ggplot(data = publish_hour) + 
+  geom_bar(mapping = aes(x = publish_hour)) + 
+  facet_wrap(~account_type, nrow = 2)
+
+# ***************************** end of plots *********************************************
+
+
+
+# ************* start word cloud will run out of memory around 100K tweets *********
+
+#df <- tryCatch(rquery.wordcloud(tweet_sub_df$content, type=c("text", "url", "file"), 
+#                 lang="english", excludeWords = NULL, 
+#                 textStemming = FALSE,  colorPalette="Dark2",
+#                 max.words=200))
+#if("try-error" %in% class(df)) print(paste("error producing word cloud", geterrmessage(), ": "))
+
+# *********************************** end word cloud **********************************
+
