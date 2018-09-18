@@ -17,6 +17,7 @@
 #install.packages("topicmodels") # for LDA topic modelling 
 #install.packages("SnowballC") # for stemming
 #install.packages("wordcloud")
+#install.packages("radarchart")
 
 library(ggplot2)
 library(dplyr)
@@ -34,7 +35,7 @@ library(syuzhet)
 library(topicmodels) # for LDA topic modelling 
 library(SnowballC) # for stemming
 library(wordcloud)
-
+library(radarchart)
 
 
 # function to perform sentiment and emotion analysis
@@ -375,7 +376,7 @@ sentiment_over_time <- dplyr::select(tweets, publish_date, publish_day, account_
                                      anger, anticipation, disgust, fear, joy, 
                                      sadness, surprise, trust, negative, 
                                      positive, time_category ) %>%
-  filter(publish_date >= "2014-01-01" & publish_date <= "2015-01-01" &
+  filter(publish_date >= "2015-07-20" & publish_date <= "2015-07-024" &
            account_type %in% c("Right")) %>%
   group_by(publish_day, account_type) %>% 
   summarise(
@@ -416,21 +417,19 @@ sent_by_time_day <- dplyr::select(keyword_tweets, time_category, positive, negat
   mutate(
     time_category = factor(time_category, levels = time_category_levels),
     avg_pos_sentiment  = pos_sentiment / tweet_count,
-    avg_neg_sentiment = neg_sentiment / tweet_count #,
-    #avg_anger = anger / tweet_count,
-    #avg_anticipation = anticipation / tweet_count,
-    #avg_disgust = disgust / tweet_count,
-    #avg_fear = fear / tweet_count,
-    #avg_joy = joy / tweet_count,
-    #avg_sadness = sadness / tweet_count,
-    #avg_surprise = surprise / tweet_count,
-    #avg_trust = trust / tweet_count)
-    )     %>%
+    avg_neg_sentiment = neg_sentiment / tweet_count,
+    avg_anger = anger / tweet_count,
+    avg_anticipation = anticipation / tweet_count,
+    avg_disgust = disgust / tweet_count,
+    avg_fear = fear / tweet_count,
+    avg_joy = joy / tweet_count,
+    avg_sadness = sadness / tweet_count,
+    avg_surprise = surprise / tweet_count,
+    avg_trust = trust / tweet_count)    %>%
   gather(
     avg_pos_sentiment, avg_neg_sentiment,
-    
-     # avg_anger,avg_anticipation, avg_disgust, avg_fear, 
-     # avg_joy, avg_sadness, avg_surprise, avg_trust, 
+     avg_anger,avg_anticipation, avg_disgust, avg_fear, 
+     avg_joy, avg_sadness, avg_surprise, avg_trust, 
          key = "sentiment", value = "avg_value") %>%
   dplyr::select(time_category, sentiment, avg_value)
 
@@ -477,3 +476,42 @@ ggplot(data = publish_hour) +
 
 # *********************************** end word cloud **********************************
 
+
+# ********************** start radar graph ********************************************
+dplyr::select(tweets, account_type, publish_date, positive, negative,
+                                  anger, anticipation, disgust, fear, joy, 
+                                  sadness, surprise, trust) %>%
+  filter(publish_date >= "2015-01-01" & publish_date <= "2018-01-01" &
+           account_type %in% c("Right", "left")) %>%
+  group_by(account_type) %>%
+  summarise(pos_sentiment  = sum(positive, na.rm = TRUE),
+            neg_sentiment = sum(negative, na.rm = TRUE),
+            anger = sum(anger, na.rm = TRUE),
+            anticipation = sum(anticipation, na.rm = TRUE),
+            disgust = sum(disgust, na.rm = TRUE),
+            fear = sum(fear, na.rm = TRUE),
+            joy = sum(joy, na.rm = TRUE),
+            sadness = sum(sadness, na.rm = TRUE),
+            surprise = sum(surprise, na.rm = TRUE),
+            trust = sum(trust, na.rm = TRUE),
+            tweet_count = n()) %>%
+  mutate(
+    #Positive  = pos_sentiment / tweet_count,
+    #Negative = neg_sentiment / tweet_count,
+    Anger = anger / tweet_count,
+    Anticipation = anticipation / tweet_count,
+    Disgust = disgust / tweet_count,
+    Fear = fear / tweet_count,
+    Joy = joy / tweet_count,
+    Sadness = sadness / tweet_count,
+    Surprise = surprise / tweet_count,
+    Trust = trust / tweet_count)    %>%
+  gather(
+    #Positive, Negative,
+    Anger,Anticipation, Disgust, Fear, 
+    Joy, Sadness, Surprise, Trust, 
+    key = "emotion", value = average_per_tweet) %>%
+  dplyr::select(account_type, emotion, average_per_tweet) %>%
+  spread(key = account_type, value = average_per_tweet) %>%
+  chartJSRadar(showLegend = F)
+# *************************** end radar graph **************************************
