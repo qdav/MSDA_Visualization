@@ -66,7 +66,6 @@ usmap::plot_usmap(data = permits2017, values = "totals", lines = "red") +
 
 
 
-
 # show map of per capita permits by state
 permits_2017_per_cap <- filter(permits_and_pop, 
                       permits$month >= as.yearmon("2017-01") &
