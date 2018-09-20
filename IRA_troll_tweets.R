@@ -269,7 +269,7 @@ for (k in 1:length(listcsv)){
  
    
   # uncomment the row brackets to control how many tweets per file you work with
-  tweets_sub <- tweets_df [1:100,]
+  tweets_sub <- tweets_df #[1:100,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
