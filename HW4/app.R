@@ -1,8 +1,10 @@
 library(shiny)
 library(dplyr)
 library(ggplot2)
+library(here)
 library(MASS)
 library(shinydashboard)
+
 
 
 ui <- 
@@ -54,6 +56,13 @@ ui <-
   )
 )
 
+vecMeasures <- c('Total Sales' = 'SALEQ', 
+              'Cash' = 'CHEQ', 
+              'Assets' = 'ATQ', 
+              'Profit' = 'OIADPQ', 
+              'R&D' = 'XRDQ', 
+              'SG&A' = 'XSGAQ'
+              )
 
 
 server <- function(input, output) {
@@ -77,6 +86,8 @@ server <- function(input, output) {
                     span = input$spanLoess, 
                     se = input$stdErrorRibbon,
                     na.rm = TRUE) +  
+        labs(x = paste(names(vecMeasures)[vecMeasures == input$xVar], '(million $)'), 
+             y = paste(names(vecMeasures)[vecMeasures == input$yVar], '(million $)')) + 
         theme_bw()        
     }
     else { 
