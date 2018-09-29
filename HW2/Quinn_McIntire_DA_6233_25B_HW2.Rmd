@@ -1,0 +1,111 @@
+---
+title: "Quinn_McIntire_DA_6233_25B_HW2"
+author: "Quinn McIntire (uqr395)"
+date: "September 14, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+ 
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(extrafont)
+loadfonts()
+```
+
+
+```{r}
+pres2 <- subset(presidential, start > economics$date[1])
+pres2$Party <- pres2$party
+economics1 <- subset(economics, date > pres2$start[1])
+
+ggplot(data = economics1) +
+
+  geom_rect(aes(xmin = start , xmax = end, fill=Party),
+            data = pres2, 
+            ymin = 0, ymax = Inf, alpha = 1
+  ) +
+  scale_fill_manual(values = c("blue", "red")) +
+  geom_vline(aes(xintercept = pres2$start),
+             data = pres2,
+             color = "white", alpha = 1
+  ) +
+  geom_text(aes(
+      x = start,
+      y = 1300, label = name,
+      family = "Impact"
+    ),
+    data = pres2,
+    vjust =1,
+    hjust = 0, 
+    angle = 90, 
+    nudge_x = 200, 
+    color = "white",
+    size = 5
+  ) +
+  geom_line(aes(x = date, y = unemploy), color="white", size=1.3) + 
+  labs(x = "Year", y="Unemployment '000") +
+    theme(
+    panel.grid = element_blank(),
+    panel.background = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 30, vjust=1, hjust=1), 
+    axis.ticks.x = element_line()
+  ) +
+  scale_x_date(breaks = pres2$start, labels = scales::date_format("%m-%Y") ) 
+```
+
+
+
+
+
+
+```{r }
+
+pres2 <- subset(presidential, start > economics$date[1])
+pres2$Party <- pres2$party
+economics1 <- subset(economics, date > pres2$start[1])
+
+ggplot(data = economics1) +
+    geom_rect(aes(xmin = start , xmax = end, fill=Party),
+            data = pres2, 
+            ymin = 0, ymax = Inf, alpha = 1
+  ) +
+  ylim(0, 30) + 
+  scale_fill_manual(values = c("blue", "red")) +
+  geom_vline(aes(xintercept = pres2$start),
+             data = pres2,
+             color = "white", alpha = 1
+  ) +
+  geom_text(aes(
+    x = start,
+    y = 25.5, label = name,
+    family = "Bahnschrift"
+  ),
+  data = pres2,
+  vjust =1,
+  hjust = 0, 
+  angle = 90, 
+  nudge_x = 200, 
+  color = "white",
+  size = 5
+  ) +
+  geom_line(aes(x = date, y = uempmed), color="white", size=1.3) + 
+  labs(x = "Year", y="Median Duration of Unemployment (Weeks)") +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 30, vjust=1, hjust=1), 
+    axis.ticks.x = element_line()
+  ) +
+  scale_x_date(breaks = pres2$start, labels = scales::date_format("%Y-%m-%d") ) 
+
+```
+
+
+
+

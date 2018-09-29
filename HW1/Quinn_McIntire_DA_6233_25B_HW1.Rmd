@@ -1,0 +1,97 @@
+---
+title: "Quinn_McIntire_DA_6233_2B5_HW1"
+author: "Quinn McIntire (uqr395) "
+date: "September 5, 2018"
+output:
+<<<<<<< HEAD
+=======
+  html_document: default
+  
+>>>>>>> 26d5ac421b756be756f9149bd696592d95d672d6
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(MASS)
+library(pastecs)
+```
+
+## R Markdown
+
+Q1 
+
+```{r}
+d1 <- diamonds
+ggplot(d1, aes(x = carat, y = price)) +
+  geom_point(aes(color = as.character(clarity)),  alpha=0.3) +
+  labs(title="Scatterplot of Diamond Prices", x="Diamond Carats", y="Diamond Price") + 
+  theme_bw()
+
+```
+
+Q2
+
+```{r}
+ggplot(d1, aes(x = carat, y = price)) +
+  geom_point(aes(color = as.character(clarity)),  alpha=0.3, show.legend = FALSE) +
+  labs(title="Scatterplot of Diamond Prices", x="Diamond Carats", y="Diamond Price") + 
+  facet_wrap("clarity") + 
+  theme_bw()
+```
+
+Q3
+
+```{r}
+ggplot(d1, aes(x = table, y = price)) +
+  geom_smooth(method="lm", color="red", linetype=2) + 
+  labs(x="Table", y="Price") + 
+  theme_bw()
+
+```
+
+
+```{r}
+ggplot(d1, aes(x = depth, y = price)) +
+  geom_smooth(method="lm", color="white", linetype=4) + 
+  labs(x="Depth", y="Price") + 
+  theme_bw()
+```
+
+Q4
+```{r}
+ggplot(data = d1) + 
+  geom_bar(mapping = aes(x = price)) + 
+  theme_bw()
+```
+
+```{r}
+ggplot(data = d1) + 
+  geom_histogram(mapping = aes(x = price)) + 
+  theme_bw()
+```
+
+```{r}
+ggplot(data = d1) + 
+  geom_bar(mapping = aes(x = clarity, fill=clarity), show.legend = FALSE) + 
+  theme_bw()
+```
+
+```{r}
+ggplot(d1, aes(x = cut, y = depth)) + 
+  geom_violin(color="blue") +
+  geom_jitter(color="red", alpha=0.06) + 
+  theme_bw()
+```
+
+```{r}
+ggplot(d1, aes(x = x, y = price)) +
+  geom_smooth(method="lm", color="green") +
+  geom_smooth(color="blue", se=FALSE) + 
+  theme_bw()
+```
+
