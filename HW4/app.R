@@ -22,24 +22,24 @@ ui <-
     dashboardHeader(title = "Apple Financials"),
     dashboardSidebar(
       fileInput('fileIn', 
-                'Upload SAS Data', 
+                'Upload SAS Data:', 
                 multiple = FALSE,
                 accept = c('application/x-sas-data')),
       selectInput('xVar', 
-                  'X-Axis Variable', 
+                  'X-Axis Variable:', 
                   vecMeasures, 
                   selected = 'SALEQ'),
       selectInput('yVar', 
-                  'Y-Axis Variable', 
+                  'Y-Axis Variable:', 
                   vecMeasures,
                   selected = 'XRDQ'),
       selectInput('scaleType', 
-                  'Choose the Scale', 
+                  'Choose the Scale:', 
                   c('Levels', 
                     'Log10'), 
                   selected = 'Levels'), 
       radioButtons('modelType', 
-                   'Choose the Model', 
+                   'Choose the Model:', 
                    c('Linear Model' = 'lm', 
                      'Loess' = 'loess', 
                      'Robust Linear' = 'rlm', 
@@ -97,7 +97,7 @@ server <- function(input, output) {
       geom_point (na.rm = TRUE) + 
       labs(x = paste(names(vecMeasures)[vecMeasures == input$xVar], '(million $)'), 
            y = paste(names(vecMeasures)[vecMeasures == input$yVar], '(million $)')) +
-      theme_bw()  
+      theme_bw() 
     
     # add selected line to base plot  
     if (input$modelType != 'none') {
@@ -110,7 +110,7 @@ server <- function(input, output) {
 
     # scale axis if log10 selected
     if (input$scaleType == 'Log10') 
-      p <- p + scale_x_log10() 
+      p <- p + scale_x_log10()
     
     
     print(p)
