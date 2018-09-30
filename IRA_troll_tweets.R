@@ -269,7 +269,7 @@ for (k in 1:length(listcsv)){
  
    
   # uncomment the row brackets to control how many tweets per file you work with
-  tweets_sub <- tweets_df[1:10000,]
+  tweets_sub <- tweets_df #[1:10000,]
 
   # join to daytime_categories
   tweets_sub <-dplyr::select(tweets_sub, everything()) %>%
@@ -301,8 +301,8 @@ for (k in 1:length(listcsv)){
 
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
-# optionally write out a file with all the filtered tweets (~1.9M, 350MB)
-write.csv(keyword_tweets, file="topic_tweets_w_sentiment.csv")
+# optionally write out a file with all the filtered tweets (~1.9M, 650MB)
+write.csv(tweets, file="tweets_w_sentiment.csv")
 
 # *************************** end loop through tweet files *******************************
 
@@ -344,7 +344,7 @@ for (row in 1:nrow(time_and_type_df)){
 # holds all the tweets that match one or more LDA topic terms for a given troll/time cateogry
 keyword_tweets <- bind_rows(topic_tweets_list) 
 
-# optionally write out a file with all the filtered tweets (~600K, 350MB)
+# optionally write out a file with all the filtered tweets (~600K, 340MB)
 write.csv(keyword_tweets, file="topic_tweets_w_sentiment.csv")
 
 
