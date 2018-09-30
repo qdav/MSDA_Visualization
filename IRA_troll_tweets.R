@@ -301,7 +301,7 @@ for (k in 1:length(listcsv)){
 
 tweets <- bind_rows(tweet_list) #combine all the tweet file data
 
-# optionally write out a file with all the filtered tweets (~1.9M, 650MB)
+# optionally write out a file with all non-English tweets (~2.1M, 650MB)
 write.csv(tweets, file="tweets_w_sentiment.csv")
 
 # *************************** end loop through tweet files *******************************
