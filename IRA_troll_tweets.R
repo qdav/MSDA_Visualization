@@ -615,6 +615,6 @@ ggplot(data = sent_by_time_day, aes(x = time_category, y = avg_value, group=sent
 # ggplot(data = publish_hour) +
 #   geom_bar(mapping = aes(x = publish_hour)) +
 #   facet_wrap(~account_type, nrow = 2)
-
+# s
 
 
